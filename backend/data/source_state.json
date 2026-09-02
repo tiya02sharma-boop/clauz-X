@@ -1,0 +1,50 @@
+{
+  "india_code": {
+    "url": "https://www.indiacode.nic.in/indiacode/home.jsp",
+    "last_checked": "2026-09-02T07:34:14.049883+00:00",
+    "last_status": "failed",
+    "failure": "403 Client Error: Forbidden for url: https://www.indiacode.nic.in/indiacode/home.jsp"
+  },
+  "egazette_india": {
+    "url": "https://egazette.gov.in/",
+    "last_checked": "2026-09-02T07:34:14.212683+00:00",
+    "last_status": "failed",
+    "failure": "HTTPSConnectionPool(host='egazette.gov.in', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)')))"
+  },
+  "cbic_gst": {
+    "url": "https://cbic-gst.gov.in/",
+    "last_hash": "1f6d95c961bd49983a2f946798d2f54be5f73d703157fe2a87f372f08c0010f3",
+    "last_checked": "2026-09-02T07:34:14.642057+00:00",
+    "last_status": "baseline_created"
+  },
+  "mca_acts_rules": {
+    "url": "https://www.mca.gov.in/",
+    "last_checked": "2026-09-02T07:34:14.706136+00:00",
+    "last_status": "failed",
+    "failure": "403 Client Error: Forbidden for url: https://www.mca.gov.in/"
+  },
+  "income_tax_latest": {
+    "url": "https://www.incometax.gov.in/iec/foportal/latest-news?link=7&mobile-app=1",
+    "last_hash": "9552545760b2fb35768435e348fc0ae1594a9be61a9858b9a2795d822282cd4d",
+    "last_checked": "2026-09-02T07:34:16.906730+00:00",
+    "last_status": "baseline_created"
+  },
+  "epfo_circulars": {
+    "url": "https://www.epfindia.gov.in/site_en/circulars.php",
+    "last_checked": "2026-09-02T07:34:17.658586+00:00",
+    "last_status": "failed",
+    "failure": "404 Client Error: Not Found for url: https://www.epfo.gov.in:443/site_en/circulars.php"
+  },
+  "esic_circulars": {
+    "url": "https://www.esic.gov.in/circulars/index",
+    "last_checked": "2026-09-02T07:34:17.738641+00:00",
+    "last_status": "failed",
+    "failure": "HTTPSConnectionPool(host='www.esic.gov.in', port=443): Max retries exceeded with url: /circulars/index (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)')))"
+  },
+  "labour_gazette_notifications": {
+    "url": "https://labour.gov.in/mainsecretariatdivisions/gazette-notifications",
+    "last_checked": "2026-09-02T07:34:18.022494+00:00",
+    "last_status": "failed",
+    "failure": "403 Client Error: Forbidden for url: https://www.labour.gov.in/mainsecretariatdivisions/gazette-notifications"
+  }
+}

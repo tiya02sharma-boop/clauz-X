@@ -1,0 +1,82 @@
+[
+  {
+    "source_id": "india_code",
+    "name": "India Code — Central and State legislation",
+    "url": "https://www.indiacode.nic.in/indiacode/home.jsp",
+    "authority": "Legislative Department, Ministry of Law and Justice",
+    "category": "primary_legislation",
+    "jurisdiction": "India",
+    "ingestion_mode": "verification_only",
+    "active": true
+  },
+  {
+    "source_id": "egazette_india",
+    "name": "eGazette of India",
+    "url": "https://egazette.gov.in/",
+    "authority": "Department of Publication, Government of India",
+    "category": "official_gazette",
+    "jurisdiction": "India",
+    "ingestion_mode": "official_alert_or_manual_upload",
+    "active": true
+  },
+  {
+    "source_id": "cbic_gst",
+    "name": "CBIC GST Notifications",
+    "url": "https://cbic-gst.gov.in/",
+    "authority": "Central Board of Indirect Taxes and Customs",
+    "category": "gst",
+    "jurisdiction": "India",
+    "ingestion_mode": "official_alert_or_licensed_feed",
+    "active": true
+  },
+  {
+    "source_id": "mca_acts_rules",
+    "name": "MCA Acts, Rules, Notifications and Circulars",
+    "url": "https://www.mca.gov.in/",
+    "authority": "Ministry of Corporate Affairs",
+    "category": "corporate_and_roc",
+    "jurisdiction": "India",
+    "ingestion_mode": "official_alert_or_licensed_feed",
+    "active": true
+  },
+  {
+    "source_id": "income_tax_latest",
+    "name": "Income Tax Department — Latest News and Circulars",
+    "url": "https://www.incometax.gov.in/iec/foportal/latest-news?link=7&mobile-app=1",
+    "authority": "CBDT, Department of Revenue",
+    "category": "direct_tax_and_tds",
+    "jurisdiction": "India",
+    "ingestion_mode": "official_alert_or_licensed_feed",
+    "active": true
+  },
+  {
+    "source_id": "epfo_circulars",
+    "name": "EPFO Circulars",
+    "url": "https://www.epfindia.gov.in/site_en/circulars.php",
+    "authority": "Employees' Provident Fund Organisation",
+    "category": "provident_fund",
+    "jurisdiction": "India",
+    "ingestion_mode": "official_alert_or_licensed_feed",
+    "active": true
+  },
+  {
+    "source_id": "esic_circulars",
+    "name": "ESIC Circulars",
+    "url": "https://www.esic.gov.in/circulars/index",
+    "authority": "Employees' State Insurance Corporation",
+    "category": "employee_state_insurance",
+    "jurisdiction": "India",
+    "ingestion_mode": "official_alert_or_licensed_feed",
+    "active": true
+  },
+  {
+    "source_id": "labour_gazette_notifications",
+    "name": "Ministry of Labour Gazette Notifications",
+    "url": "https://labour.gov.in/mainsecretariatdivisions/gazette-notifications",
+    "authority": "Ministry of Labour and Employment",
+    "category": "central_labour_law",
+    "jurisdiction": "India",
+    "ingestion_mode": "official_alert_or_manual_upload",
+    "active": true
+  }
+]

@@ -1,0 +1,5 @@
+{
+  "version": "0.1.0-starter",
+  "status": "active_starter_catalog",
+  "description": "A limited built-in, source-backed starter catalog for the product demo. It is release-managed by internal regulatory operations, never by an MSME or CA user. It must be expanded and independently reviewed before production rollout."
+}
