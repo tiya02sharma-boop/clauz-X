@@ -1,11 +1,43 @@
 from typing import Any, Literal
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+
+MICRO_INVESTMENT_MAX = 25_000_000      # Rs. 2.5 Crore (2,50,00,000)
+MICRO_TURNOVER_MAX = 100_000_000       # Rs. 10 Crore (10,00,00,000)
+SMALL_INVESTMENT_MAX = 250_000_000     # Rs. 25 Crore (25,00,00,000)
+SMALL_TURNOVER_MAX = 1_000_000_000     # Rs. 100 Crore (100,00,00,000)
+MEDIUM_INVESTMENT_MAX = 1_250_000_000  # Rs. 125 Crore (1,25,00,00,000)
+MEDIUM_TURNOVER_MAX = 5_000_000_000    # Rs. 500 Crore (500,00,00,000)
+
+def compute_msme_classification(investment: float | int | None, turnover: float | int | None) -> str:
+    """
+    Composite criteria classification (April 2025 thresholds):
+    Both investment AND turnover must satisfy the threshold for a tier.
+    If EITHER exceeds a tier's threshold, the business cannot be in that tier.
+    """
+    if investment is None or turnover is None:
+        return "Not MSME"
+    try:
+        inv = float(investment)
+        t_over = float(turnover)
+    except (ValueError, TypeError):
+        return "Not MSME"
+
+    if inv <= MICRO_INVESTMENT_MAX and t_over <= MICRO_TURNOVER_MAX:
+        return "Micro"
+    if inv <= SMALL_INVESTMENT_MAX and t_over <= SMALL_TURNOVER_MAX:
+        return "Small"
+    if inv <= MEDIUM_INVESTMENT_MAX and t_over <= MEDIUM_TURNOVER_MAX:
+        return "Medium"
+    return "Not MSME"
 
 class BusinessProfile(BaseModel):
     business_id: str | None = None
     business_name: str | None = None
     turnover: float | None = None
     headcount: int | None = None
+    investment_plant_machinery: float | None = None
+    is_factory: bool | None = None
+    msme_classification: str | None = None
     sector: str | None = None
     state: str | None = None
     entity_type: str | None = None
@@ -13,6 +45,16 @@ class BusinessProfile(BaseModel):
     gst_filing_scheme: str | None = None
     agm_date: str | None = None
     whatsapp_number: str | None = None
+    flags: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def set_derived_msme_classification(self):
+        # Always recompute derived msme_classification; never let it go stale
+        self.msme_classification = compute_msme_classification(
+            self.investment_plant_machinery, self.turnover
+        )
+        return self
+
 
 class ObligationCalendarEntry(BaseModel):
     obligation_id: str
@@ -77,6 +119,9 @@ class ExtractedRule(BaseModel):
     turnover_max: float | None = None
     headcount_min: int | None = None
     headcount_max: int | None = None
+    investment_min: float | None = None
+    investment_max: float | None = None
+    requires_is_factory: bool | None = None
     sector: str | None = None
     state: str | None = None
     entity_type: str | None = None

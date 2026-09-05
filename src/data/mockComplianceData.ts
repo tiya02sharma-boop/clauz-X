@@ -7,6 +7,9 @@ export const defaultProfile: BusinessProfile = {
   sector: 'Information Technology & Software Services',
   turnover: '₹5 Cr - ₹15 Cr',
   headcount: '25-50 Employees',
+  investmentPlantMachinery: 20000000,
+  isFactory: false,
+  msmeClassification: 'Small',
   gstRegistered: true,
   gstFilingScheme: 'monthly',
   gstin: '27AABCU9603R1ZM',
@@ -196,6 +199,36 @@ export const sampleObligations: Obligation[] = [
     applicabilityReason: 'Every Private Limited company must hold at least 1 meeting every quarter (max gap 120 days).',
     penaltyRisk: 'Penalty of ₹25,000 on company and ₹5,000 on officer in default.',
     sourceUrl: 'https://mca.gov.in'
+  },
+  {
+    id: 'obl-factories-act',
+    code: 'Factories Act Reg.',
+    title: 'Factories Act Registration & Licensing',
+    act: 'Factories Act, 1948',
+    section: 'Section 6 read with State Factory Rules [PLACEHOLDER: Legal verification required]',
+    category: 'Labor & Social Security',
+    frequency: 'Annual',
+    nextDueDate: 'December 31, 2026',
+    daysRemaining: 117,
+    status: 'Upcoming',
+    applicabilityReason: 'Applies because your business operates as a factory under the Factories Act, not a commercial establishment.',
+    penaltyRisk: 'Imprisonment up to 2 years or fine up to ₹1,00,000 under Section 92 [PLACEHOLDER: Legal verification required].',
+    sourceUrl: 'https://labour.gov.in'
+  },
+  {
+    id: 'obl-shops-act',
+    code: 'Shops & Est. Reg.',
+    title: 'Shops & Commercial Establishments Registration',
+    act: 'State Shops and Commercial Establishments Act',
+    section: 'State Shops & Establishments Registration Provisions [PLACEHOLDER: Legal verification required]',
+    category: 'Labor & Social Security',
+    frequency: 'Annual',
+    nextDueDate: 'December 31, 2026',
+    daysRemaining: 117,
+    status: 'Upcoming',
+    applicabilityReason: 'Applies because your business operates as a commercial establishment under the Shops and Establishments Act, not a factory.',
+    penaltyRisk: 'Monetary penalty up to ₹1,00,000 per state schedule [PLACEHOLDER: Legal verification required].',
+    sourceUrl: 'https://labour.gov.in'
   }
 ];
 

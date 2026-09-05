@@ -6,13 +6,17 @@
       "business_name": "API Test Enterprises",
       "turnover": 5000000.0,
       "headcount": 25,
+      "investment_plant_machinery": null,
+      "is_factory": null,
+      "msme_classification": "Not MSME",
       "sector": null,
       "state": null,
       "entity_type": null,
       "gst_registered": true,
       "gst_filing_scheme": null,
       "agm_date": null,
-      "whatsapp_number": "+919988776655"
+      "whatsapp_number": "+919988776655",
+      "flags": null
     },
     "obligations": [
       {
@@ -56,7 +60,7 @@
       }
     ],
     "created_at": "2026-09-02T11:42:09.239949+00:00",
-    "updated_at": "2026-09-02T17:50:24.525717+00:00"
+    "updated_at": "2026-09-05T04:50:20.760623+00:00"
   },
   {
     "business_id": "biz_51e432aa",

@@ -1120,5 +1120,89 @@
     "timestamp": "2026-09-02T18:05:02.005399+00:00",
     "action": "grounded_question_answered",
     "retrieved_sources": 2
+  },
+  {
+    "timestamp": "2026-09-05T04:45:29.623554+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-05T04:45:29.624879+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_8d0e15f417284151",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-05T04:45:29.629113+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 50,
+    "sent": 0,
+    "simulated": 7
+  },
+  {
+    "timestamp": "2026-09-05T04:47:13.118830+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-05T04:47:13.121677+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_ba6941c88b3d444d",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-05T04:47:13.125865+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 50,
+    "sent": 0,
+    "simulated": 0
+  },
+  {
+    "timestamp": "2026-09-05T04:47:27.538985+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-05T04:47:27.540271+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_0b56755331ec4ef9",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-05T04:47:27.544476+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 50,
+    "sent": 0,
+    "simulated": 0
+  },
+  {
+    "timestamp": "2026-09-05T04:50:20.761438+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-05T04:50:20.762961+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_1e63181138074bba",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-05T04:50:20.767175+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 50,
+    "sent": 0,
+    "simulated": 0
   }
 ]

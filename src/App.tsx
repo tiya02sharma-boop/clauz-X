@@ -29,6 +29,8 @@ export const App: React.FC = () => {
         return {
           ...defaultProfile,
           ...parsed,
+          investmentPlantMachinery: parsed.investmentPlantMachinery !== undefined ? parsed.investmentPlantMachinery : defaultProfile.investmentPlantMachinery,
+          isFactory: typeof parsed.isFactory === 'boolean' ? parsed.isFactory : defaultProfile.isFactory,
           whatsappNumber: parsed.whatsappNumber || defaultProfile.whatsappNumber || '+919896603656'
         };
       } catch {

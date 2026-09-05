@@ -5,6 +5,9 @@ export interface BusinessProfile {
   sector: string;
   turnover: string;
   headcount: string;
+  investmentPlantMachinery: number;
+  isFactory: boolean;
+  msmeClassification?: 'Micro' | 'Small' | 'Medium' | 'Not MSME';
   gstRegistered: boolean;
   gstFilingScheme?: 'monthly' | 'quarterly' | 'composition' | 'unknown';
   agmDate?: string;

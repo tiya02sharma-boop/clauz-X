@@ -18,6 +18,104 @@ class ApplicabilityTests(unittest.TestCase):
     def test_null_conditions_do_not_restrict(self):
         self.assertTrue(evaluate_rule({"rule_id":"r","obligation_name":"General"}, {})["applicable"])
 
+    def test_composite_msme_classification_micro(self):
+        # Both within Micro thresholds -> Micro
+        p1 = BusinessProfile(investment_plant_machinery=25_000_000, turnover=100_000_000)
+        self.assertEqual(p1.msme_classification, "Micro")
+        p2 = BusinessProfile(investment_plant_machinery=10_000_000, turnover=40_000_000)
+        self.assertEqual(p2.msme_classification, "Micro")
+
+    def test_composite_msme_classification_either_exceeds_not_micro(self):
+        # Investment exceeds 2.5 Cr -> cannot be Micro (composite AND, not OR)
+        p_inv_exceeds = BusinessProfile(investment_plant_machinery=25_000_001, turnover=50_000_000)
+        self.assertNotEqual(p_inv_exceeds.msme_classification, "Micro")
+        self.assertEqual(p_inv_exceeds.msme_classification, "Small")
+
+        # Turnover exceeds 10 Cr -> cannot be Micro (composite AND, not OR)
+        p_to_exceeds = BusinessProfile(investment_plant_machinery=10_000_000, turnover=100_000_001)
+        self.assertNotEqual(p_to_exceeds.msme_classification, "Micro")
+        self.assertEqual(p_to_exceeds.msme_classification, "Small")
+
+        # Both exceed Micro thresholds -> cannot be Micro
+        p_both_exceed = BusinessProfile(investment_plant_machinery=30_000_000, turnover=150_000_000)
+        self.assertNotEqual(p_both_exceed.msme_classification, "Micro")
+        self.assertEqual(p_both_exceed.msme_classification, "Small")
+
+    def test_composite_msme_classification_tiers_and_above(self):
+        # Small enterprise: inv <= 25 Cr AND turnover <= 100 Cr
+        small = BusinessProfile(investment_plant_machinery=250_000_000, turnover=1_000_000_000)
+        self.assertEqual(small.msme_classification, "Small")
+
+        # Exceeds Small investment threshold -> Medium
+        medium_by_inv = BusinessProfile(investment_plant_machinery=250_000_001, turnover=500_000_000)
+        self.assertEqual(medium_by_inv.msme_classification, "Medium")
+
+        # Medium enterprise: inv <= 125 Cr AND turnover <= 500 Cr
+        medium = BusinessProfile(investment_plant_machinery=1_250_000_000, turnover=5_000_000_000)
+        self.assertEqual(medium.msme_classification, "Medium")
+
+        # Above Medium thresholds -> Not MSME
+        not_msme_inv = BusinessProfile(investment_plant_machinery=1_250_000_001, turnover=100_000_000)
+        self.assertEqual(not_msme_inv.msme_classification, "Not MSME")
+
+        not_msme_to = BusinessProfile(investment_plant_machinery=50_000_000, turnover=5_000_000_001)
+        self.assertEqual(not_msme_to.msme_classification, "Not MSME")
+
+    def test_factory_vs_shops_establishments_routing(self):
+        factory_rule = {
+            "rule_id": "rule_factories_act_registration",
+            "obligation_name": "Factories Act Registration",
+            "requires_is_factory": True
+        }
+        shops_rule = {
+            "rule_id": "rule_shops_establishments_registration",
+            "obligation_name": "Shops & Establishments Registration",
+            "requires_is_factory": False
+        }
+
+        # is_factory = True matches Factories Act and does NOT match Shops & Establishments
+        factory_biz = BusinessProfile(is_factory=True, turnover=10_000_000, investment_plant_machinery=5_000_000)
+        eval_factory_on_factory = evaluate_rule(factory_rule, factory_biz)
+        eval_shops_on_factory = evaluate_rule(shops_rule, factory_biz)
+
+        self.assertTrue(eval_factory_on_factory["applicable"])
+        self.assertIn("Applies because your business operates as a factory under the Factories Act, not a commercial establishment.", eval_factory_on_factory["reason"])
+        self.assertFalse(eval_shops_on_factory["applicable"])
+        self.assertIn("Does not apply because your business operates as a factory, not a commercial establishment.", eval_shops_on_factory["reason"])
+
+        # is_factory = False matches Shops & Establishments and does NOT match Factories Act
+        commercial_biz = BusinessProfile(is_factory=False, turnover=10_000_000, investment_plant_machinery=5_000_000)
+        eval_factory_on_comm = evaluate_rule(factory_rule, commercial_biz)
+        eval_shops_on_comm = evaluate_rule(shops_rule, commercial_biz)
+
+        self.assertFalse(eval_factory_on_comm["applicable"])
+        self.assertIn("Does not apply because your business does not operate as a factory under the Factories Act.", eval_factory_on_comm["reason"])
+        self.assertTrue(eval_shops_on_comm["applicable"])
+        self.assertIn("Applies because your business operates as a commercial establishment under the Shops and Establishments Act, not a factory.", eval_shops_on_comm["reason"])
+
+    def test_existing_obligations_no_regression(self):
+        # A rule with no investment or factory constraint continues to match regardless of is_factory / investment
+        generic_rule = {"rule_id": "r_gen", "obligation_name": "General Tax", "turnover_min": 1000}
+        
+        biz_factory = {"turnover": 5000, "is_factory": True, "investment_plant_machinery": 2000000}
+        biz_non_factory = {"turnover": 5000, "is_factory": False, "investment_plant_machinery": 500000}
+        biz_no_new_fields = {"turnover": 5000}
+
+        self.assertTrue(evaluate_rule(generic_rule, biz_factory)["applicable"])
+        self.assertTrue(evaluate_rule(generic_rule, biz_non_factory)["applicable"])
+        self.assertTrue(evaluate_rule(generic_rule, biz_no_new_fields)["applicable"])
+
+    def test_investment_min_max_rule_matching(self):
+        rule = {"rule_id": "r_inv", "investment_min": 1_000_000, "investment_max": 5_000_000}
+        
+        # Matches within bounds
+        self.assertTrue(evaluate_rule(rule, {"investment_plant_machinery": 2_500_000})["applicable"])
+        # Fails below min
+        self.assertFalse(evaluate_rule(rule, {"investment_plant_machinery": 500_000})["applicable"])
+        # Fails above max
+        self.assertFalse(evaluate_rule(rule, {"investment_plant_machinery": 6_000_000})["applicable"])
+
+
 class ReviewBoundaryTests(unittest.TestCase):
     def test_engine_reads_only_live_rules(self):
         with tempfile.TemporaryDirectory() as tmp:

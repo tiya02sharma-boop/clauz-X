@@ -8,14 +8,47 @@ interface MSMEProfileOnboardingProps {
   onCancel: () => void;
 }
 
+const parseNumeric = (val: unknown): number | null => {
+  if (typeof val === 'number' && Number.isFinite(val)) return val;
+  if (typeof val !== 'string') return null;
+  const cleaned = val.trim();
+  if (!cleaned) return null;
+  const rangeMatch = cleaned.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (rangeMatch) return parseInt(rangeMatch[1], 10);
+  const crMatch = cleaned.match(/([\d.]+)\s*(?:Cr|Crore)/i);
+  if (crMatch) return parseFloat(crMatch[1]) * 10000000;
+  const lakhMatch = cleaned.match(/([\d.]+)\s*(?:Lakh|Lac)/i);
+  if (lakhMatch) return parseFloat(lakhMatch[1]) * 100000;
+  const numMatch = cleaned.match(/\d+/);
+  if (numMatch) return parseInt(numMatch[0], 10);
+  return null;
+};
+
+const getDerivedMsmeTier = (
+  investment: number | string | undefined | null,
+  turnover: string | number | undefined | null
+): 'Micro' | 'Small' | 'Medium' | 'Not MSME' => {
+  const inv = typeof investment === 'number' ? investment : parseNumeric(investment);
+  const to = typeof turnover === 'number' ? turnover : parseNumeric(turnover);
+  if (inv === null || to === null) return 'Not MSME';
+  // April 2025 Composite Thresholds (AND logic)
+  if (inv <= 25000000 && to <= 100000000) return 'Micro';
+  if (inv <= 250000000 && to <= 1000000000) return 'Small';
+  if (inv <= 1250000000 && to <= 5000000000) return 'Medium';
+  return 'Not MSME';
+};
+
 export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
   initialProfile,
   onSubmit,
   onCancel
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [profile, setProfile] = useState<BusinessProfile>(() => ({
     ...initialProfile,
+    investmentPlantMachinery: initialProfile.investmentPlantMachinery !== undefined ? initialProfile.investmentPlantMachinery : 20000000,
+    isFactory: typeof initialProfile.isFactory === 'boolean' ? initialProfile.isFactory : false,
     whatsappNumber: initialProfile.whatsappNumber || '+91 98966 03656'
   }));
 
@@ -54,14 +87,45 @@ export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
   ];
 
   const handleContinue = () => {
+    setValidationError(null);
+    if (step === 2) {
+      if (!profile.turnover) {
+        setValidationError('Please select an annual turnover bracket.');
+        return;
+      }
+      if (
+        profile.investmentPlantMachinery === undefined ||
+        profile.investmentPlantMachinery === null ||
+        String(profile.investmentPlantMachinery).trim() === '' ||
+        isNaN(Number(profile.investmentPlantMachinery)) ||
+        Number(profile.investmentPlantMachinery) < 0
+      ) {
+        setValidationError('Please enter your Investment in Plant & Machinery / Equipment in Rs. (required numeric value).');
+        return;
+      }
+      if (!profile.headcount) {
+        setValidationError('Please select an employee headcount bracket.');
+        return;
+      }
+      if (typeof profile.isFactory !== 'boolean') {
+        setValidationError('Please answer the question regarding power-driven machinery in manufacturing process.');
+        return;
+      }
+    }
+
     if (step < 4) {
       setStep((step + 1) as 1 | 2 | 3 | 4);
     } else {
-      onSubmit(profile);
+      const derivedTier = getDerivedMsmeTier(profile.investmentPlantMachinery, profile.turnover);
+      onSubmit({
+        ...profile,
+        msmeClassification: derivedTier
+      });
     }
   };
 
   const handleBack = () => {
+    setValidationError(null);
     if (step > 1) {
       setStep((step - 1) as 1 | 2 | 3 | 4);
     } else {
@@ -229,48 +293,133 @@ export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
 
           {/* STEP 2: SIZE & SCALE */}
           {step === 2 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.25s ease-out' }}>
-              <div>
-                <label style={labelStyle}>Annual Turnover Bracket (FY 2025-26)</label>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginBottom: '0.6rem' }}>
-                  Used to evaluate GST audit thresholds, QRMP scheme applicability, and MSMED classification.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  {turnoverBrackets.map((tb, idx) => (
-                    <label
-                      key={idx}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.85rem',
-                        padding: '0.85rem 1rem',
-                        backgroundColor: profile.turnover === tb ? 'var(--color-brick-light)' : 'var(--color-bg)',
-                        border: profile.turnover === tb ? '1px solid var(--color-brick)' : '1px solid var(--color-border)',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        fontWeight: profile.turnover === tb ? 600 : 400
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="turnover"
-                        checked={profile.turnover === tb}
-                        onChange={() => setProfile({ ...profile, turnover: tb })}
-                        style={{ accentColor: 'var(--color-brick)' }}
-                      />
-                      <span>{tb}</span>
-                    </label>
-                  ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', animation: 'fadeIn 0.25s ease-out' }}>
+              
+              {/* Turnover & Investment in Plant/Machinery side-by-side */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }} className="form-two-col">
+                <div>
+                  <label style={labelStyle}>
+                    Annual Turnover Bracket (FY 2025-26) <span style={{ color: 'var(--color-brick)' }}>*</span>
+                  </label>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginBottom: '0.6rem' }}>
+                    Used to evaluate GST audit thresholds, QRMP scheme applicability, and MSMED classification.
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                    {turnoverBrackets.map((tb, idx) => (
+                      <label
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.85rem',
+                          padding: '0.75rem 0.9rem',
+                          backgroundColor: profile.turnover === tb ? 'var(--color-brick-light)' : 'var(--color-bg)',
+                          border: profile.turnover === tb ? '1px solid var(--color-brick)' : '1px solid var(--color-border)',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.8125rem',
+                          fontWeight: profile.turnover === tb ? 600 : 400
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="turnover"
+                          checked={profile.turnover === tb}
+                          onChange={() => setProfile({ ...profile, turnover: tb })}
+                          style={{ accentColor: 'var(--color-brick)' }}
+                        />
+                        <span>{tb}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>
+                    Investment in Plant & Machinery / Equipment (Rs.) <span style={{ color: 'var(--color-brick)' }}>*</span>
+                  </label>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginBottom: '0.6rem' }}>
+                    Original investment cost (excluding land & buildings). Evaluated with turnover as a composite criterion for MSME tiering.
+                  </p>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    required
+                    value={profile.investmentPlantMachinery !== undefined && profile.investmentPlantMachinery !== null ? profile.investmentPlantMachinery : ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? '' : Number(e.target.value);
+                      setProfile({ ...profile, investmentPlantMachinery: val as any });
+                    }}
+                    placeholder="e.g. 20000000 (₹2 Crore)"
+                    style={inputStyle}
+                  />
+
+                  {profile.investmentPlantMachinery !== undefined && profile.investmentPlantMachinery !== null && !isNaN(Number(profile.investmentPlantMachinery)) && Number(profile.investmentPlantMachinery) >= 0 && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', margin: '0.4rem 0 0.6rem', fontFamily: 'var(--font-mono)' }}>
+                      Amount: <strong>₹{Number(profile.investmentPlantMachinery).toLocaleString('en-IN')}</strong>
+                      {Number(profile.investmentPlantMachinery) >= 10000000 && ` (~₹${(Number(profile.investmentPlantMachinery) / 10000000).toFixed(2)} Cr)`}
+                    </div>
+                  )}
+
+                  {/* Preset quick buttons */}
+                  <div style={{ marginTop: '0.6rem', marginBottom: '0.85rem' }}>
+                    <span style={{ fontSize: '0.6875rem', color: 'var(--color-muted)', display: 'block', marginBottom: '0.35rem' }}>
+                      Quick reference thresholds:
+                    </span>
+                    <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      {[
+                        { label: '₹25 Lakhs', val: 2500000 },
+                        { label: '₹1 Crore', val: 10000000 },
+                        { label: '₹2.5 Cr (Micro)', val: 25000000 },
+                        { label: '₹10 Crore', val: 100000000 },
+                        { label: '₹25 Cr (Small)', val: 250000000 }
+                      ].map((chip, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setProfile({ ...profile, investmentPlantMachinery: chip.val })}
+                          style={{
+                            fontSize: '0.6875rem',
+                            padding: '0.2rem 0.5rem',
+                            backgroundColor: Number(profile.investmentPlantMachinery) === chip.val ? 'var(--color-brick)' : '#FFFFFF',
+                            color: Number(profile.investmentPlantMachinery) === chip.val ? '#FFFFFF' : 'var(--color-black)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Live MSME Composite Preview Box */}
+                  <div style={{ padding: '0.75rem 0.85rem', backgroundColor: '#FAF5ED', border: '1px solid var(--color-border)', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '0.6875rem', fontFamily: 'var(--font-mono)', color: 'var(--color-muted)', textTransform: 'uppercase' }}>
+                      Live MSME Classification
+                    </div>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--color-brick)', marginTop: '0.15rem' }}>
+                      {getDerivedMsmeTier(profile.investmentPlantMachinery, profile.turnover)} {getDerivedMsmeTier(profile.investmentPlantMachinery, profile.turnover) !== 'Not MSME' ? 'Enterprise' : ''}
+                    </div>
+                    <div style={{ fontSize: '0.6875rem', color: 'var(--color-muted)', marginTop: '0.25rem', lineHeight: 1.3 }}>
+                      Composite AND criterion: Micro requires both Investment ≤ ₹2.5 Cr AND Turnover ≤ ₹10 Cr. Small requires both Investment ≤ ₹25 Cr AND Turnover ≤ ₹100 Cr.
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Headcount */}
               <div>
-                <label style={labelStyle}>Total Workforce / Employee Headcount</label>
+                <label style={labelStyle}>
+                  Total Workforce / Employee Headcount <span style={{ color: 'var(--color-brick)' }}>*</span>
+                </label>
                 <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginBottom: '0.6rem' }}>
                   Evaluates mandatory ESI (10+ staff) and EPF (20+ staff) registrations.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                   {headcountBrackets.map((hb, idx) => (
                     <label
                       key={idx}
@@ -278,12 +427,12 @@ export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.85rem',
-                        padding: '0.85rem 1rem',
+                        padding: '0.75rem 0.9rem',
                         backgroundColor: profile.headcount === hb ? 'var(--color-brick-light)' : 'var(--color-bg)',
                         border: profile.headcount === hb ? '1px solid var(--color-brick)' : '1px solid var(--color-border)',
                         borderRadius: '4px',
                         cursor: 'pointer',
-                        fontSize: '0.875rem',
+                        fontSize: '0.8125rem',
                         fontWeight: profile.headcount === hb ? 600 : 400
                       }}
                     >
@@ -299,6 +448,61 @@ export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* is_factory Question */}
+              <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '4px' }}>
+                <label style={{ ...labelStyle, fontSize: '0.9375rem', marginBottom: '0.4rem', lineHeight: 1.4 }}>
+                  Does your business use power-driven machinery and employ workers in a manufacturing process on the premises? <span style={{ color: 'var(--color-brick)' }}>*</span>
+                </label>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginBottom: '0.85rem', lineHeight: 1.4 }}>
+                  This determines which workplace registration regime applies: <strong>Yes</strong> routes to Factories Act 1948 obligations, while <strong>No</strong> routes to your State's Shops & Commercial Establishments Act.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }} className="form-two-col">
+                  <button
+                    type="button"
+                    onClick={() => setProfile({ ...profile, isFactory: true })}
+                    style={{
+                      padding: '0.85rem',
+                      backgroundColor: profile.isFactory === true ? 'var(--color-brick-light)' : 'var(--color-bg)',
+                      border: profile.isFactory === true ? '1px solid var(--color-brick)' : '1px solid var(--color-border)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      color: profile.isFactory === true ? 'var(--color-brick)' : 'var(--color-black)',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div>✓ Yes</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--color-muted)', marginTop: '0.2rem' }}>
+                      Uses power machinery in manufacturing (Factories Act, 1948)
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setProfile({ ...profile, isFactory: false })}
+                    style={{
+                      padding: '0.85rem',
+                      backgroundColor: profile.isFactory === false ? 'var(--color-brick-light)' : 'var(--color-bg)',
+                      border: profile.isFactory === false ? '1px solid var(--color-brick)' : '1px solid var(--color-border)',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      color: profile.isFactory === false ? 'var(--color-brick)' : 'var(--color-black)',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div>✕ No</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--color-muted)', marginTop: '0.2rem' }}>
+                      Commercial establishment / office / trading (Shops & Est. Act)
+                    </div>
+                  </button>
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -434,6 +638,24 @@ export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
                   <div style={reviewValueStyle}>{profile.turnover} • {profile.headcount}</div>
                 </div>
                 <div style={reviewItemStyle}>
+                  <div style={reviewLabelStyle}>Investment in Plant & Machinery</div>
+                  <div style={reviewValueStyle}>
+                    ₹{Number(profile.investmentPlantMachinery || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div style={reviewItemStyle}>
+                  <div style={reviewLabelStyle}>Workplace Regime</div>
+                  <div style={reviewValueStyle}>
+                    {profile.isFactory ? 'Factory (Factories Act, 1948)' : 'Commercial Establishment (Shops & Est. Act)'}
+                  </div>
+                </div>
+                <div style={{ ...reviewItemStyle, backgroundColor: '#FAF5ED', borderColor: 'var(--color-brick)' }}>
+                  <div style={{ ...reviewLabelStyle, color: 'var(--color-brick)' }}>Derived MSME Classification</div>
+                  <div style={{ ...reviewValueStyle, color: 'var(--color-brick)' }}>
+                    {getDerivedMsmeTier(profile.investmentPlantMachinery, profile.turnover)} {getDerivedMsmeTier(profile.investmentPlantMachinery, profile.turnover) !== 'Not MSME' ? 'Enterprise' : ''}
+                  </div>
+                </div>
+                <div style={reviewItemStyle}>
                   <div style={reviewLabelStyle}>GSTIN / PAN</div>
                   <div style={reviewValueStyle}>{profile.gstin || 'Not Provided'} • {profile.pan || 'Not Provided'}</div>
                 </div>
@@ -446,6 +668,13 @@ export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
                   <div style={reviewValueStyle}>{profile.whatsappNumber || '+91 98966 03656'}</div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Validation Error Alert */}
+          {validationError && (
+            <div style={{ marginTop: '1.5rem', padding: '0.85rem 1.25rem', backgroundColor: 'var(--color-brick-light)', border: '1px solid var(--color-brick)', borderRadius: '4px', color: 'var(--color-brick)', fontSize: '0.875rem', fontWeight: 600 }}>
+              ⚠ {validationError}
             </div>
           )}
 

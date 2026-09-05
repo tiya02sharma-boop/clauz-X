@@ -88,6 +88,19 @@ const deriveCategory = (rule: any): 'Tax & GST' | 'Labor & Social Security' | 'C
   return 'MSME Specific';
 };
 
+const computeClientMsmeClassification = (
+  investment: number | string | undefined | null,
+  turnover: string | number | undefined | null
+): 'Micro' | 'Small' | 'Medium' | 'Not MSME' => {
+  const inv = typeof investment === 'number' ? investment : parseNumericValue(investment);
+  const to = typeof turnover === 'number' ? turnover : parseNumericValue(turnover);
+  if (inv === null || to === null) return 'Not MSME';
+  if (inv <= 25000000 && to <= 100000000) return 'Micro';
+  if (inv <= 250000000 && to <= 1000000000) return 'Small';
+  if (inv <= 1250000000 && to <= 5000000000) return 'Medium';
+  return 'Not MSME';
+};
+
 export const DemoDashboard: React.FC<DemoDashboardProps> = ({
   profile,
   onEditProfile,
@@ -97,6 +110,9 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [obligations, setObligations] = useState<LiveObligation[]>([]);
   const [rulesState, setRulesState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [msmeClassification, setMsmeClassification] = useState<string>(() =>
+    profile.msmeClassification || computeClientMsmeClassification(profile.investmentPlantMachinery, profile.turnover)
+  );
   
   // Ask Clauz X State
   const [messages, setMessages] = useState<Array<{ sender: 'user' | 'assistant'; text: string; sources?: Array<{title: string; citation: string; source_url?: string}> }>>([
@@ -114,6 +130,10 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
       business_name: profile.businessName,
       turnover: parseNumericValue(profile.turnover),
       headcount: parseNumericValue(profile.headcount),
+      investment_plant_machinery: typeof profile.investmentPlantMachinery === 'number'
+        ? profile.investmentPlantMachinery
+        : parseNumericValue(profile.investmentPlantMachinery),
+      is_factory: typeof profile.isFactory === 'boolean' ? profile.isFactory : false,
       sector: profile.sector,
       state: profile.state,
       entity_type: profile.entityType ? profile.entityType.toLowerCase().replace(/\s+/g, '_') : null,
@@ -143,6 +163,10 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
         return response.json();
       })
       .then(data => {
+        const retProf = data.profile || data.business;
+        if (retProf?.msme_classification) {
+          setMsmeClassification(retProf.msme_classification);
+        }
         const rawList = data.obligations || data.applicable_obligations || [];
         const mapped = rawList.map((rule: any): LiveObligation => {
           const cat = deriveCategory(rule);
@@ -281,9 +305,27 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
             <h1 style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)', color: 'var(--color-black)', letterSpacing: '-0.02em', marginBottom: '0.35rem' }}>
               Good morning, {profile.businessName}.
             </h1>
-            <p style={{ fontSize: '1rem', color: 'var(--color-muted)' }}>
+            <p style={{ fontSize: '1rem', color: 'var(--color-muted)', marginBottom: '0.75rem' }}>
               Here's your real-time compliance overview tailored for a <strong style={{ color: 'var(--color-black)' }}>{profile.entityType}</strong> in <strong style={{ color: 'var(--color-black)' }}>{profile.state}</strong>.
             </p>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', padding: '0.25rem 0.65rem', backgroundColor: 'var(--color-brick-light)', border: '1px solid var(--color-brick)', borderRadius: '4px', color: 'var(--color-brick)', fontWeight: 700 }}>
+                MSME Classification: {msmeClassification} {msmeClassification !== 'Not MSME' ? 'Enterprise' : ''}
+              </span>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', padding: '0.25rem 0.65rem', backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-black)', fontWeight: 500 }}>
+                Regime: {profile.isFactory ? 'Factory (Factories Act 1948)' : 'Commercial Establishment (Shops & Est. Act)'}
+              </span>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', padding: '0.25rem 0.65rem', backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-muted)' }}>
+                Turnover: {profile.turnover}
+              </span>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', padding: '0.25rem 0.65rem', backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-muted)' }}>
+                Investment: ₹{Number(profile.investmentPlantMachinery || 0).toLocaleString('en-IN')}
+              </span>
+              <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', padding: '0.25rem 0.65rem', backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: '4px', color: 'var(--color-muted)' }}>
+                Workforce: {profile.headcount}
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
