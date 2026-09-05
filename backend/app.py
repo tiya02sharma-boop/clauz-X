@@ -19,6 +19,7 @@ if __package__ in (None, ""):
     )
     from backend.models import BusinessProfile, ExtractedRule
     from backend.monitor import run_monitor_cycle
+    from backend.monitor_scheduler import start_monitor_scheduler
     from backend.reminder_scheduler import run_reminder_cycle
     from backend.storage import audit, load, now, save
     from backend.whatsapp_sender import send_onboarding_summary
@@ -36,6 +37,7 @@ else:
     )
     from .models import BusinessProfile, ExtractedRule
     from .monitor import run_monitor_cycle
+    from .monitor_scheduler import start_monitor_scheduler
     from .reminder_scheduler import run_reminder_cycle
     from .storage import audit, load, now, save
     from .whatsapp_sender import send_onboarding_summary
@@ -54,6 +56,7 @@ def bootstrap_product_baseline() -> None:
     audit(config.AUDIT_PATH, "product_baseline_installed", version=manifest.get("version"), rule_count=len(baseline))
 
 bootstrap_product_baseline()
+start_monitor_scheduler()
 
 @app.before_request
 def handle_preflight():

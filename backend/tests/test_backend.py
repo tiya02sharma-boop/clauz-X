@@ -39,4 +39,21 @@ class MonitorTests(unittest.TestCase):
             finally:
                 for key, value in original.items(): setattr(config, key, value)
 
+    def test_changed_website_notice_creates_candidate_without_pdf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); original = {k: getattr(config, k) for k in ("STATE_PATH", "QUEUE_PATH", "AUDIT_PATH", "SNAPSHOTS_DIR", "DOCUMENTS_DIR")}
+            try:
+                config.STATE_PATH, config.QUEUE_PATH, config.AUDIT_PATH = root/'state.json', root/'queue.json', root/'audit.json'
+                config.SNAPSHOTS_DIR, config.DOCUMENTS_DIR = root/'snapshots', root/'documents'; config.SNAPSHOTS_DIR.mkdir()
+                source = {"source_id":"s", "url":"https://example.test/notices", "active":True}
+                candidate = {"obligation_name":"GST return", "source_citation":"Notice 1", "extraction_method":"gemini", "simulated":False, "fields_needing_human_verification":[]}
+                with patch('backend.monitor.fetch_source', side_effect=[{'raw_content':'old'}, {'raw_content':'new'}]), \
+                     patch('backend.monitor.detect_new_regulatory_entries', return_value=[{"title":"Notice 1", "summary":"GST return due date changes", "source_url":"/notice-1"}]), \
+                     patch('backend.monitor.call_gemini_extraction', return_value=candidate):
+                    run_monitor_cycle(sources=[source]); result = run_monitor_cycle(sources=[source])
+                self.assertEqual(result['review_candidates_created'], 1)
+                self.assertEqual(load(config.QUEUE_PATH, [])[0]['document']['source_url'], 'https://example.test/notice-1')
+            finally:
+                for key, value in original.items(): setattr(config, key, value)
+
 if __name__ == "__main__": unittest.main()

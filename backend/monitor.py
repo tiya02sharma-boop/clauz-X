@@ -2,7 +2,7 @@ import argparse, hashlib, logging, re, sys
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 import requests
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -91,6 +91,36 @@ def _candidate_exists(queue: list, document: dict, candidate: dict) -> bool:
         if document.get("source_url") and document.get("source_url") == old.get("source_url") and candidate.get("obligation_name") == rule.get("obligation_name"): return True
     return False
 
+def _absolute_url(url: str | None, page_url: str) -> str | None:
+    """Turn an AI-detected relative link into a traceable HTTP(S) URL."""
+    if not url:
+        return None
+    resolved = urljoin(page_url, url)
+    return resolved if urlparse(resolved).scheme in {"http", "https"} else None
+
+def _entry_document_text(entry: dict) -> tuple[str | None, Path | None, str | None]:
+    """Prefer an official linked PDF, falling back to the website notice itself."""
+    if entry.get("pdf_url"):
+        pdf_path, pdf_hash = _download_pdf(entry["source_id"], entry["pdf_url"])
+        extracted = extract_pdf_text(pdf_path)
+        return (None if extracted["extraction_failed"] else extracted["text"]), pdf_path, pdf_hash
+    text = "\n".join(part for part in (entry.get("title"), entry.get("summary")) if part)
+    return (text or None), None, None
+
+def _queue_candidate(queue: list, candidate: dict, document: dict) -> bool:
+    if _candidate_exists(queue, document, candidate):
+        return False
+    fingerprint = document.get("pdf_hash") or f"{document.get('source_url')}|{candidate.get('obligation_name')}"
+    cid = "candidate_" + hashlib.sha256(fingerprint.encode()).hexdigest()[:12]
+    queue.append({"candidate_id": cid, "candidate_rule": candidate, "document": document,
+                  "extracted_at": now(), "extraction_method": candidate["extraction_method"],
+                  "simulated": candidate["simulated"], "extraction_confidence": candidate.get("extraction_confidence"),
+                  "fields_needing_human_verification": candidate.get("fields_needing_human_verification", []),
+                  "status": "pending_human_review", "approved_by": None, "reviewed_at": None,
+                  "review_notes": None})
+    audit(config.AUDIT_PATH, "candidate_created", candidate_id=cid)
+    return True
+
 def run_monitor_cycle(dry_run: bool = False, sources=None) -> dict:
     config.ensure_storage(); sources = sources if sources is not None else load(config.SOURCES_PATH, [])
     state, queue = load(config.STATE_PATH, {}), load(config.QUEUE_PATH, [])
@@ -108,20 +138,24 @@ def run_monitor_cycle(dry_run: bool = False, sources=None) -> dict:
             summary["sources_changed"] += 1; previous = load(_snapshot_path(sid, previous_hash), {}).get("normalized_content", ""); summary["ai_calls"] += 1; audit(config.AUDIT_PATH, "ai_change_detection_started", source_id=sid)
             entries = detect_new_regulatory_entries(normalized, previous); summary["new_entries_found"] += len(entries); audit(config.AUDIT_PATH, "ai_change_detection_completed", source_id=sid, entries=len(entries))
             for entry in entries:
-                if not entry.get("pdf_url"): continue
                 try:
-                    pdf_path, pdf_hash = _download_pdf(sid, entry["pdf_url"]); summary["pdfs_downloaded"] += 1; audit(config.AUDIT_PATH, "pdf_downloaded", source_id=sid, pdf_hash=pdf_hash)
-                    extracted = extract_pdf_text(pdf_path)
-                    if extracted["extraction_failed"]: audit(config.AUDIT_PATH, "pdf_extraction_failed", source_id=sid, pdf_hash=pdf_hash); continue
-                    summary["ai_calls"] += 1; candidate = call_gemini_extraction(extracted["text"]); summary["rules_extracted"] += 1
-                    doc = {"title": entry.get("title"), "pdf_path": str(pdf_path), "source_url": entry.get("source_url") or entry.get("pdf_url"), "pdf_hash": pdf_hash}
+                    entry = {**entry, "source_id": sid,
+                             "pdf_url": _absolute_url(entry.get("pdf_url"), source["url"]),
+                             "source_url": _absolute_url(entry.get("source_url"), source["url"]) or source["url"]}
+                    notice_text, pdf_path, pdf_hash = _entry_document_text(entry)
+                    if pdf_path:
+                        summary["pdfs_downloaded"] += 1; audit(config.AUDIT_PATH, "pdf_downloaded", source_id=sid, pdf_hash=pdf_hash)
+                    if not notice_text:
+                        if pdf_hash: audit(config.AUDIT_PATH, "pdf_extraction_failed", source_id=sid, pdf_hash=pdf_hash)
+                        continue
+                    summary["ai_calls"] += 1; candidate = call_gemini_extraction(notice_text); summary["rules_extracted"] += 1
+                    doc = {"title": entry.get("title"), "pdf_path": str(pdf_path) if pdf_path else None, "source_url": entry["source_url"], "pdf_hash": pdf_hash}
                     # Preserve entry-level traceability even when the document did not
                     # explicitly provide a citation. Reviewers still decide promotion.
                     if not candidate.get("source_title"): candidate["source_title"] = entry.get("title")
                     if not candidate.get("source_url"): candidate["source_url"] = doc["source_url"]
-                    if not _candidate_exists(queue, doc, candidate) and not dry_run:
-                        cid = "candidate_" + hashlib.sha256((pdf_hash + str(candidate)).encode()).hexdigest()[:12]
-                        queue.append({"candidate_id": cid, "candidate_rule": candidate, "document": doc, "extracted_at": now(), "extraction_method": candidate["extraction_method"], "simulated": candidate["simulated"], "extraction_confidence": candidate.get("extraction_confidence"), "fields_needing_human_verification": candidate.get("fields_needing_human_verification", []), "status": "pending_human_review", "approved_by": None, "reviewed_at": None, "review_notes": None}); summary["review_candidates_created"] += 1; audit(config.AUDIT_PATH, "candidate_created", candidate_id=cid)
+                    if not dry_run and _queue_candidate(queue, candidate, doc):
+                        summary["review_candidates_created"] += 1
                 except Exception as error: summary["failures"].append({"source_id": sid, "entry": entry.get("title"), "error": str(error)})
             state[sid] = {"url": source["url"], "last_hash": digest, "last_checked": now(), "last_status": "changed"}
         except SourceFetchError as error:

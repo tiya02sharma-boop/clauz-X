@@ -22,6 +22,10 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 REQUEST_TIMEOUT = int(os.getenv("MONITOR_REQUEST_TIMEOUT", "20"))
 MAX_DOCUMENT_BYTES = int(os.getenv("MAX_DOCUMENT_BYTES", "15000000"))
+# Background monitoring is deliberately opt-in. Production deployments should run
+# this process once (for example through a platform scheduler), not per web worker.
+ENABLE_REGULATORY_MONITOR = os.getenv("ENABLE_REGULATORY_MONITOR", "false").lower() == "true"
+MONITOR_INTERVAL_MINUTES = max(5, int(os.getenv("MONITOR_INTERVAL_MINUTES", "360")))
 
 # WhatsApp Provider — WaSenderAPI
 WASENDER_API_KEY = os.getenv("WASENDER_API_KEY")  # Bearer token from wasenderapi.com dashboard
