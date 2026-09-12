@@ -8,12 +8,14 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from backend import config
     from backend.change_detector import detect_new_regulatory_entries
+    from backend.embeddings import embed_texts
     from backend.extract_rule import call_gemini_extraction
     from backend.pdf_extractor import extract_pdf_text
     from backend.storage import audit, load, now, save
 else:
     from . import config
     from .change_detector import detect_new_regulatory_entries
+    from .embeddings import embed_texts
     from .extract_rule import call_gemini_extraction
     from .pdf_extractor import extract_pdf_text
     from .storage import audit, load, now, save
@@ -121,6 +123,77 @@ def _queue_candidate(queue: list, candidate: dict, document: dict) -> bool:
     audit(config.AUDIT_PATH, "candidate_created", candidate_id=cid)
     return True
 
+# Administrative noise keywords (fallback / secondary signal)
+ADMINISTRATIVE_NOISE_KEYWORDS = [
+    "helpdesk", "portal maintenance", "scheduled downtime", "server maintenance",
+    "call center", "toll free", "user manual", "system upgrade", "technical glitch",
+    "portal unavailable", "holiday notice", "office closed", "grievance redressal"
+]
+
+RELEVANT_NOTIFICATION_EXAMPLES = [
+    "Notification No. 12/2026: Extension of due date for filing Form GSTR-3B for August 2026",
+    "Circular No. 04/2026: Clarification on applicability of Tax Deducted at Source on e-commerce operators",
+    "MCA Notification: Amendments to Companies Rules regarding annual DIR-3 KYC",
+    "EPFO Circular: Revision of wage ceiling for Employees Provident Fund coverage",
+    "CBIC Notification: Mandatory e-invoicing for businesses with turnover exceeding 5 Crore",
+]
+
+NOISE_NOTIFICATION_EXAMPLES = [
+    "Advisory: GST Portal will remain unavailable for scheduled maintenance on Sunday",
+    "Helpdesk contact numbers updated for technical assistance during filing",
+    "Circular regarding office holidays and non-working days for year 2026",
+    "Tender notice for procurement of office laptops and computer peripherals",
+    "User manual released for navigating newly designed MCA21 portal interface",
+]
+
+_REF_EMBEDDINGS = None
+
+
+def _get_reference_embeddings():
+    global _REF_EMBEDDINGS
+    if _REF_EMBEDDINGS is None:
+        rel_vecs = embed_texts(RELEVANT_NOTIFICATION_EXAMPLES, task_instruction=None)
+        noise_vecs = embed_texts(NOISE_NOTIFICATION_EXAMPLES, task_instruction=None)
+        _REF_EMBEDDINGS = (rel_vecs, noise_vecs)
+    return _REF_EMBEDDINGS
+
+
+def ai_read_and_filter(title: str) -> bool:
+    """Filter out administrative noise notices using semantic embeddings with keyword fallback.
+
+    Returns True if the notice is relevant, False if it is administrative noise.
+    """
+    if not title or not title.strip():
+        return False
+
+    t_lower = title.lower()
+    keyword_hit = any(kw in t_lower for kw in ADMINISTRATIVE_NOISE_KEYWORDS)
+
+    try:
+        rel_vecs, noise_vecs = _get_reference_embeddings()
+        title_vec = embed_texts([title], task_instruction=None)[0]
+        import numpy as np
+        t_arr = np.array(title_vec)
+        t_norm = float(np.linalg.norm(t_arr)) or 1.0
+
+        rel_sims = [float(np.dot(t_arr, np.array(r)) / (t_norm * (float(np.linalg.norm(r)) or 1.0))) for r in rel_vecs]
+        noise_sims = [float(np.dot(t_arr, np.array(n)) / (t_norm * (float(np.linalg.norm(n)) or 1.0))) for n in noise_vecs]
+
+        max_rel = max(rel_sims)
+        max_noise = max(noise_sims)
+
+        # Classified as noise if semantic similarity to noise examples is higher
+        if max_noise > max_rel:
+            return False
+        # Fallback check
+        if keyword_hit:
+            return False
+        return True
+    except Exception as exc:
+        log.warning("Embedding similarity check failed for notice '%s', falling back to keyword filter: %s", title, exc)
+        return not keyword_hit
+
+
 def run_monitor_cycle(dry_run: bool = False, sources=None) -> dict:
     config.ensure_storage(); sources = sources if sources is not None else load(config.SOURCES_PATH, [])
     state, queue = load(config.STATE_PATH, {}), load(config.QUEUE_PATH, [])
@@ -138,6 +211,10 @@ def run_monitor_cycle(dry_run: bool = False, sources=None) -> dict:
             summary["sources_changed"] += 1; previous = load(_snapshot_path(sid, previous_hash), {}).get("normalized_content", ""); summary["ai_calls"] += 1; audit(config.AUDIT_PATH, "ai_change_detection_started", source_id=sid)
             entries = detect_new_regulatory_entries(normalized, previous); summary["new_entries_found"] += len(entries); audit(config.AUDIT_PATH, "ai_change_detection_completed", source_id=sid, entries=len(entries))
             for entry in entries:
+                filter_text = " ".join(part for part in (entry.get("title"), entry.get("summary")) if part)
+                if not ai_read_and_filter(filter_text):
+                    log.info("Filtered administrative/noise notice: %s", filter_text)
+                    continue
                 try:
                     entry = {**entry, "source_id": sid,
                              "pdf_url": _absolute_url(entry.get("pdf_url"), source["url"]),

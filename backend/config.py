@@ -18,7 +18,9 @@ UPDATES_PATH = DATA_DIR / "regulatory_update_queue.json"
 BUSINESSES_PATH = DATA_DIR / "businesses.json"
 REMINDERS_PATH = DATA_DIR / "reminder_logs.json"
 LEGAL_CORPUS_PATH = DATA_DIR / "legal_corpus.json"
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+COMPLIANCE_CHECKS_PATH = DATA_DIR / "compliance_checks.json"
+CONTRACT_LEGAL_CITATIONS_PATH = DATA_DIR / "contract_legal_citations.json"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
 REQUEST_TIMEOUT = int(os.getenv("MONITOR_REQUEST_TIMEOUT", "20"))
 MAX_DOCUMENT_BYTES = int(os.getenv("MAX_DOCUMENT_BYTES", "15000000"))
@@ -29,9 +31,13 @@ MONITOR_INTERVAL_MINUTES = max(5, int(os.getenv("MONITOR_INTERVAL_MINUTES", "360
 
 # WhatsApp Provider — WaSenderAPI
 WASENDER_API_KEY = os.getenv("WASENDER_API_KEY")  # Bearer token from wasenderapi.com dashboard
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL")    # e.g. https://api.yourdomain.com for production deployments
+
+CHROMA_DIR = DATA_DIR / "chroma_db"
+EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "768"))
 
 def ensure_storage() -> None:
-    for directory in (DATA_DIR, DOCUMENTS_DIR, SNAPSHOTS_DIR):
+    for directory in (DATA_DIR, DOCUMENTS_DIR, SNAPSHOTS_DIR, CHROMA_DIR):
         directory.mkdir(parents=True, exist_ok=True)
     for path, empty in (
         (RULES_PATH, []),
@@ -44,6 +50,8 @@ def ensure_storage() -> None:
         (BUSINESSES_PATH, []),
         (REMINDERS_PATH, []),
         (LEGAL_CORPUS_PATH, []),
+        (COMPLIANCE_CHECKS_PATH, []),
+        (CONTRACT_LEGAL_CITATIONS_PATH, {}),
     ):
         if not path.exists():
             path.write_text(__import__("json").dumps(empty, indent=2), encoding="utf-8")

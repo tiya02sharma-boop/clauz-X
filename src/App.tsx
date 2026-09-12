@@ -19,7 +19,7 @@ import type { BusinessProfile } from './types';
 import { defaultProfile } from './data/mockComplianceData';
 
 export const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'landing' | 'onboarding' | 'analysis' | 'dashboard'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'onboarding' | 'analysis' | 'dashboard'>('dashboard');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<BusinessProfile>(() => {
     const saved = localStorage.getItem('clauz_x_profile');

@@ -16,6 +16,27 @@ WhatsApp reminders sent for upcoming due dates
 "Ask Clauz X" answers compliance questions from reviewed legal text
 ```
 
+## Contract Health Report
+
+The dashboard's **Contract Health Report** accepts one PDF contract and runs a
+first-pass India-focused review. It checks the eight core templates
+(indemnity, liability cap, termination, confidentiality, governing law, data
+protection, IP and force majeure) plus parties/signing authority, scope and
+GST/TDS, warranties, assignment/subcontracting, notices, and anti-bribery.
+
+Each check is shown as **Compliant**, **Needs review**, or **Missing / high
+risk**, with matching text where available. The initial checks are
+deterministic keyword signals so the feature works without an AI key. They are
+a starting playbook, not legal advice or automatic contract approval; have
+Indian counsel tailor and approve the templates before production use.
+
+API endpoints:
+
+```text
+POST /api/contracts/health         # JSON: contract_text, optional filename
+POST /api/contracts/health/upload  # multipart form: contract=<PDF>
+```
+
 Regulatory changes go through a human review queue before updating the live rule table — nothing unreviewed affects your obligations automatically.
 
 ## Quick Start

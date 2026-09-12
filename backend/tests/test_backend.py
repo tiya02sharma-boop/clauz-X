@@ -118,10 +118,15 @@ class ApplicabilityTests(unittest.TestCase):
 
 class ReviewBoundaryTests(unittest.TestCase):
     def test_engine_reads_only_live_rules(self):
+        # Stage 2: check_applicability() evaluates BOTH checker-embedded rules (orchestrator)
+        # AND any additional rules found in the custom rules_path.  The core intent of this
+        # test is that a rule from a custom rules.json is included in the result.
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "rules.json"; path.write_text(json.dumps([{"rule_id":"r","obligation_name":"X","headcount_min":2}]))
             result = check_applicability({"headcount":2}, path)
-            self.assertEqual(len(result["applicable_obligations"]), 1)
+            rule_ids = [r["rule_id"] for r in result["applicable_obligations"]]
+            # The custom rule from the temp rules.json must appear in applicable_obligations.
+            self.assertIn("r", rule_ids, "Custom rule from rules_path must be evaluated and included.")
 
 class MonitorTests(unittest.TestCase):
     def test_baseline_then_unchanged_skips_ai(self):

@@ -209,3 +209,53 @@ def send_onboarding_summary(business_name: str, whatsapp_number: str, obligation
     )
 
     return send_whatsapp_message(to=whatsapp_number, message=body)
+
+
+def send_contract_health_report_whatsapp(
+    whatsapp_number: str,
+    report: dict,
+    pdf_download_url: str | None = None,
+) -> WhatsAppSendResult:
+    """Format and dispatch a Contract Health Review report via WhatsApp."""
+    filename = report.get("filename") or "Contract"
+    score = report.get("health_score", 0)
+    risk = str(report.get("overall_risk", "medium")).upper()
+    exec_summary = report.get("executive_summary") or "First-pass legal risk audit screening completed."
+    key_risks = report.get("key_risks") or []
+    recommendations = report.get("negotiation_recommendations") or []
+
+    results = report.get("results") or []
+    compliant_count = sum(1 for r in results if r.get("status") == "compliant")
+    needs_review_count = sum(1 for r in results if r.get("status") == "needs_review")
+    high_risk_count = sum(1 for r in results if r.get("status") == "missing_high_risk")
+
+    risk_emoji = "🟢" if "LOW" in risk else ("🟡" if "MEDIUM" in risk else "🔴")
+
+    msg_lines = [
+        f"📄 *CLAUZ X CONTRACT HEALTH & RISK AUDIT*",
+        f"📁 *Contract:* {filename}",
+        f"🛡️ *Overall Risk:* {risk_emoji} {risk} (Health Score: {score}/100)",
+        f"📊 *Compliance:* ✅ {compliant_count} Compliant | ⚠️ {needs_review_count} Review | 🚨 {high_risk_count} High Risk",
+        "",
+        f"📝 *Executive Summary:*",
+        f"_{exec_summary}_",
+    ]
+
+    if key_risks:
+        msg_lines.extend(["", "🚨 *Key Red Flags & Statutory Risks:*"])
+        for r in key_risks[:4]:
+            msg_lines.append(f"• {r}")
+
+    if recommendations:
+        msg_lines.extend(["", "💡 *Recommended Negotiation Covenants:*"])
+        for rec in recommendations[:3]:
+            msg_lines.append(f"• {rec}")
+
+    if pdf_download_url:
+        msg_lines.extend(["", f"📥 *Download Full PDF Audit Report:*", pdf_download_url])
+
+    msg_lines.extend(["", "_Powered by Clauz X — India Legal & Contract AI_"])
+
+    body = "\n".join(msg_lines)
+    return send_whatsapp_message(to=whatsapp_number, message=body)
+

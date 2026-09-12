@@ -144,3 +144,29 @@ def recompute_business_calendar(
         businesses_path=businesses_path,
         rules_path=rules_path,
     )
+
+
+def save_compliance_check(
+    report: dict[str, Any], checks_path: Path | None = None
+) -> dict[str, Any]:
+    """Persist a verification report, assigning its audit identifiers if needed."""
+    checks_path = checks_path or config.COMPLIANCE_CHECKS_PATH
+    checks = load(checks_path, [])
+    stored = dict(report)
+    if not stored.get("check_id"):
+        stored["check_id"] = f"chk_{uuid.uuid4().hex[:12]}"
+    if not stored.get("created_at"):
+        stored["created_at"] = now()
+    checks.append(stored)
+    save(checks_path, checks)
+    return stored
+
+
+def list_compliance_checks(
+    business_id: str | None = None, checks_path: Path | None = None
+) -> list[dict[str, Any]]:
+    checks_path = checks_path or config.COMPLIANCE_CHECKS_PATH
+    checks = load(checks_path, [])
+    if business_id:
+        checks = [check for check in checks if check.get("business_id") == business_id]
+    return list(reversed(checks))

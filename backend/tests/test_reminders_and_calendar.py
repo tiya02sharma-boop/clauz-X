@@ -221,12 +221,12 @@ class ReminderSchedulerAcceptanceTests(unittest.TestCase):
         An obligation with an unparseable due_day_rule never appears in the
         reminder scheduler's candidate list and never crashes the cycle.
         """
-        # Business with only unparseable obligations
+        unparseable_businesses_path = self.root / "unparseable_businesses.json"
         unparseable_biz = {
             "business_id": "biz_unparseable",
             "profile": {
                 "business_name": "Unparseable Ltd",
-                "gst_registered": True,
+                "gst_registered": False,
                 "whatsapp_number": "+919876543211",
             },
         }
@@ -235,7 +235,7 @@ class ReminderSchedulerAcceptanceTests(unittest.TestCase):
             {
                 "rule_id": "rule_unparseable_only",
                 "obligation_name": "Manual Evaluation Needed",
-                "gst_registered": True,
+                "gst_registered": False,
                 "recurrence": "periodic",
                 "due_day_rule": "Confirm current statutory due date before filing.",
             }
@@ -244,13 +244,13 @@ class ReminderSchedulerAcceptanceTests(unittest.TestCase):
         save(unparseable_rules_path, rules_only_unparseable)
         save_or_update_business(
             unparseable_biz,
-            businesses_path=self.businesses_path,
+            businesses_path=unparseable_businesses_path,
             rules_path=unparseable_rules_path,
         )
 
         result = run_reminder_cycle(
             as_of_date="2026-09-13",
-            businesses_path=self.businesses_path,
+            businesses_path=unparseable_businesses_path,
             reminders_path=self.reminders_path,
             rules_path=unparseable_rules_path,
         )

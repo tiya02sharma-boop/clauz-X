@@ -1,0 +1,60 @@
+{
+  "statutory_citations": {
+    "gst_reverse_charge": [
+      "CGST Act, 2017 — Section 9(3)",
+      "CGST Act, 2017 — Section 9(4)"
+    ],
+    "tds_on_services": [
+      "Income Tax Act, 1961 — Section 194C",
+      "Income Tax Act, 1961 — Section 194J"
+    ],
+    "dpdp_breach_penalty": [
+      "DPDP Act, 2023 — Section 33",
+      "DPDP Act, 2023 — Schedule Item: up to INR 250 crore (Sec 8(5))"
+    ],
+    "dpdp_breach_notification": [
+      "DPDP Rules, 2025 — Rule 7 — 72 hours to the Board"
+    ],
+    "indemnity_contract_act": [
+      "Indian Contract Act, 1872 — Section 124"
+    ],
+    "liability_cap_contract_act": [
+      "Indian Contract Act, 1872 — Section 73"
+    ],
+    "arbitration_act": [
+      "Arbitration and Conciliation Act, 1996"
+    ],
+    "companies_act": [
+      "Companies Act, 2013"
+    ],
+    "epf_act": [
+      "EPF & MP Act, 1952 — Section 6"
+    ],
+    "esi_act": [
+      "ESI Act, 1948 — Section 39"
+    ]
+  },
+  "allowed_statutory_numbers": [
+    1872,
+    1948,
+    1952,
+    1961,
+    1996,
+    2013,
+    2017,
+    2023,
+    2025,
+    6,
+    7,
+    8,
+    9,
+    30,
+    33,
+    39,
+    72,
+    73,
+    124,
+    194,
+    250
+  ]
+}

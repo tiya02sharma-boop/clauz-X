@@ -9,6 +9,7 @@ import {
   Send,
   RefreshCw
 } from 'lucide-react';
+import { ContractDashboard } from '../ContractDashboard';
 import type { BusinessProfile } from '../../types';
 import {
   samplePredefinedQuestions
@@ -20,7 +21,7 @@ interface DemoDashboardProps {
   onBackToLanding: () => void;
 }
 
-type TabKey = 'overview' | 'obligations' | 'calendar' | 'ask';
+type TabKey = 'overview' | 'obligations' | 'calendar' | 'verify' | 'ask';
 
 type LiveObligation = {
   id: string;
@@ -345,6 +346,7 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
             { key: 'overview', label: 'Overview', icon: ShieldCheck },
             { key: 'obligations', label: `Applicable Obligations (${obligations.length})`, icon: FileText },
             { key: 'calendar', label: 'Compliance Calendar', icon: Calendar },
+            { key: 'verify', label: 'Contract Health Report', icon: ShieldCheck },
             { key: 'ask', label: 'Ask Clauz X (AI)', icon: MessageSquare }
           ].map(t => {
             const IconC = t.icon;
@@ -765,7 +767,16 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
         )}
 
         {/* =========================================================
-            TAB 4: ASK CLAUZ X (INTERACTIVE AI COPILOT)
+            TAB 4: CONTRACT HEALTH REPORT & AI AUDIT
+           ========================================================= */}
+        {activeTab === 'verify' && (
+          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '1.5rem', boxShadow: 'var(--shadow-card)', animation: 'fadeIn 0.25s ease-out' }}>
+            <ContractDashboard embedded={true} />
+          </div>
+        )}
+
+        {/* =========================================================
+            TAB 5: ASK CLAUZ X (INTERACTIVE AI COPILOT)
            ========================================================= */}
         {activeTab === 'ask' && (
           <div
@@ -847,12 +858,12 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
                   >
                     {m.text}
 
-                    {m.sources?.length && (
+                    {Boolean(m.sources?.length) && (
                       <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)', fontSize: '0.75rem' }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6875rem', color: 'var(--color-brick)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.2rem' }}>
                           STATUTORY GROUNDING
                         </div>
-                        {m.sources.map((source, sourceIndex) => (
+                        {m.sources?.map((source, sourceIndex) => (
                           <div key={`${source.title}-${sourceIndex}`} style={{ marginTop: sourceIndex ? '0.65rem' : 0 }}>
                             <div style={{ fontWeight: 600, color: 'var(--color-black)' }}>{source.title}</div>
                             <div style={{ color: 'var(--color-muted)' }}>{source.citation}</div>

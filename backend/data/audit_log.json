@@ -1204,5 +1204,828 @@
     "candidates": 50,
     "sent": 0,
     "simulated": 0
+  },
+  {
+    "timestamp": "2026-09-05T04:55:44.740730+00:00",
+    "action": "business_saved",
+    "business_id": "biz_1c181b7a"
+  },
+  {
+    "timestamp": "2026-09-05T04:55:45.368517+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_62427de2",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-05T04:55:45.911256+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_1c181b7a",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-10T14:11:48.991377+00:00",
+    "action": "business_saved",
+    "business_id": "biz_e1fedb9a"
+  },
+  {
+    "timestamp": "2026-09-10T14:11:50.579505+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_05dc579f",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-10T14:11:50.640672+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_e1fedb9a",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-10T15:08:10.194407+00:00",
+    "action": "business_saved",
+    "business_id": "biz_decab6af"
+  },
+  {
+    "timestamp": "2026-09-10T15:08:11.672145+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_decab6af",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-10T15:08:18.836739+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 2
+  },
+  {
+    "timestamp": "2026-09-10T15:08:56.582518+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 3
+  },
+  {
+    "timestamp": "2026-09-10T15:13:36.485587+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 2
+  },
+  {
+    "timestamp": "2026-09-10T15:15:25.774268+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-10T15:15:25.775719+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_9dd9aaf2c0b74829",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-10T15:15:25.780965+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 53,
+    "sent": 0,
+    "simulated": 3
+  },
+  {
+    "timestamp": "2026-09-10T15:16:00.897975+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 3
+  },
+  {
+    "timestamp": "2026-09-10T15:19:41.071161+00:00",
+    "action": "business_saved",
+    "business_id": "biz_4bbc527d"
+  },
+  {
+    "timestamp": "2026-09-10T15:19:41.554936+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_4bbc527d",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-10T15:19:52.868397+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 3
+  },
+  {
+    "timestamp": "2026-09-10T15:20:46.286313+00:00",
+    "action": "business_saved",
+    "business_id": "biz_c1667f17"
+  },
+  {
+    "timestamp": "2026-09-10T15:20:46.451767+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_c1667f17",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-10T15:20:46.469114+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_770b9ab3",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T06:49:25.964761+00:00",
+    "action": "business_saved",
+    "business_id": "biz_63aef532"
+  },
+  {
+    "timestamp": "2026-09-11T06:49:26.281751+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_e0af476b",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:06:26.789908+00:00",
+    "action": "business_saved",
+    "business_id": "biz_a39b7f44"
+  },
+  {
+    "timestamp": "2026-09-11T07:06:27.007997+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_a39b7f44",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:07:30.250216+00:00",
+    "action": "business_saved",
+    "business_id": "biz_0a7d0644"
+  },
+  {
+    "timestamp": "2026-09-11T07:07:30.427508+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_52def3ad",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:07:30.453693+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_0a7d0644",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:07:39.731478+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 3
+  },
+  {
+    "timestamp": "2026-09-11T07:10:22.082426+00:00",
+    "action": "business_saved",
+    "business_id": "biz_cc852160"
+  },
+  {
+    "timestamp": "2026-09-11T07:10:22.285506+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_cc852160",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:11:17.648434+00:00",
+    "action": "business_saved",
+    "business_id": "biz_de92d379"
+  },
+  {
+    "timestamp": "2026-09-11T07:11:17.847988+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_de92d379",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:32:57.452367+00:00",
+    "action": "business_saved",
+    "business_id": "biz_aa8cfd5c"
+  },
+  {
+    "timestamp": "2026-09-11T07:32:57.656055+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_aa8cfd5c",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:33:28.481501+00:00",
+    "action": "business_saved",
+    "business_id": "biz_e680b060"
+  },
+  {
+    "timestamp": "2026-09-11T07:33:28.687374+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_b9a30e95",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T07:33:28.694489+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_e680b060",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T09:24:57.969675+00:00",
+    "action": "business_saved",
+    "business_id": "biz_a07e0216"
+  },
+  {
+    "timestamp": "2026-09-11T09:24:58.415601+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_a07e0216",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T11:14:13.894089+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-11T11:14:13.895674+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_fd40c96bc5eb4070",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-11T11:14:13.903072+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 63,
+    "sent": 0,
+    "simulated": 10
+  },
+  {
+    "timestamp": "2026-09-11T11:14:55.888013+00:00",
+    "action": "compliance_check_run",
+    "business_id": "verification-test",
+    "score": 33,
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-11T11:15:54.326661+00:00",
+    "action": "compliance_check_run",
+    "business_id": "verification-test",
+    "score": 33,
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-11T11:34:09.471424+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 1
+  },
+  {
+    "timestamp": "2026-09-11T11:34:15.791477+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 1
+  },
+  {
+    "timestamp": "2026-09-11T11:34:41.830957+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 1
+  },
+  {
+    "timestamp": "2026-09-11T13:16:02.379732+00:00",
+    "action": "business_saved",
+    "business_id": "biz_6cb5c361"
+  },
+  {
+    "timestamp": "2026-09-11T13:16:02.702205+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_0d7ec6eb",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T13:16:02.906357+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_6cb5c361",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T13:17:20.539522+00:00",
+    "action": "business_saved",
+    "business_id": "biz_b85cb22c"
+  },
+  {
+    "timestamp": "2026-09-11T13:17:20.544230+00:00",
+    "action": "business_saved",
+    "business_id": "biz_afbc098f"
+  },
+  {
+    "timestamp": "2026-09-11T13:17:20.950872+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_b85cb22c",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T13:17:20.979123+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_afbc098f",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T13:19:02.296313+00:00",
+    "action": "business_saved",
+    "business_id": "biz_065b33fd"
+  },
+  {
+    "timestamp": "2026-09-11T13:19:02.977605+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_065b33fd",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T13:24:01.932115+00:00",
+    "action": "business_saved",
+    "business_id": "biz_d8580a38"
+  },
+  {
+    "timestamp": "2026-09-11T13:24:01.933646+00:00",
+    "action": "business_saved",
+    "business_id": "biz_8d762fb9"
+  },
+  {
+    "timestamp": "2026-09-11T13:24:02.182943+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_d8580a38",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T13:24:02.313394+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_8d762fb9",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-11T13:37:09.311261+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 3
+  },
+  {
+    "timestamp": "2026-09-11T13:37:19.810992+00:00",
+    "action": "grounded_question_answered",
+    "retrieved_sources": 3
+  },
+  {
+    "timestamp": "2026-09-11T19:17:04.757714+00:00",
+    "action": "contract_health_check_run",
+    "filename": "demo.txt",
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-11T19:21:09.953124+00:00",
+    "action": "contract_health_check_run",
+    "filename": "demo.txt",
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-11T19:33:39.134807+00:00",
+    "action": "contract_health_check_uploaded",
+    "filename": "sample_indian_commercial_contract.pdf",
+    "risk": "medium"
+  },
+  {
+    "timestamp": "2026-09-12T01:52:59.481299+00:00",
+    "action": "contract_health_check_run",
+    "filename": "it_consulting.pdf",
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:10.787996+00:00",
+    "action": "business_saved",
+    "business_id": "biz_df6fbe95"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:10.870805+00:00",
+    "action": "business_saved",
+    "business_id": "biz_3c7ee776"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:11.445974+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_3c7ee776",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:11.512072+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_df6fbe95",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:30.715643+00:00",
+    "action": "business_saved",
+    "business_id": "biz_1a931a87"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:31.290991+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_1a931a87",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:31.769000+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_6148a7ce",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:48.343690+00:00",
+    "action": "business_saved",
+    "business_id": "biz_3f5395ac"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:48.352850+00:00",
+    "action": "business_saved",
+    "business_id": "biz_4833aeb0"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:48.907992+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_4833aeb0",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T01:59:49.492474+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_3f5395ac",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T02:04:32.023804+00:00",
+    "action": "contract_health_pdf_generated",
+    "filename": "alpha_agreement.pdf"
+  },
+  {
+    "timestamp": "2026-09-12T02:05:34.658135+00:00",
+    "action": "contract_health_pdf_generated",
+    "filename": "sample_tech_corp.pdf"
+  },
+  {
+    "timestamp": "2026-09-12T02:06:24.583045+00:00",
+    "action": "contract_health_pdf_generated",
+    "filename": "sample_indian_vendor_agreement.pdf"
+  },
+  {
+    "timestamp": "2026-09-12T03:39:46.363677+00:00",
+    "action": "business_saved",
+    "business_id": "biz_ee514da8"
+  },
+  {
+    "timestamp": "2026-09-12T03:39:46.365081+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_ee514da8",
+    "status": "simulated",
+    "sid": "sim_f41ac0b858a54061",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T03:39:57.179157+00:00",
+    "action": "business_saved",
+    "business_id": "biz_824019b6"
+  },
+  {
+    "timestamp": "2026-09-12T03:39:57.180264+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_824019b6",
+    "status": "simulated",
+    "sid": "sim_7a7dc6fb3c4f40c7",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T03:40:17.183124+00:00",
+    "action": "contract_health_pdf_generated",
+    "filename": "sample_indian_vendor_agreement.pdf"
+  },
+  {
+    "timestamp": "2026-09-12T03:40:36.341933+00:00",
+    "action": "contract_health_pdf_generated",
+    "filename": "sample_indian_vendor_agreement.pdf"
+  },
+  {
+    "timestamp": "2026-09-12T03:46:53.801057+00:00",
+    "action": "business_saved",
+    "business_id": "biz_ac761b93"
+  },
+  {
+    "timestamp": "2026-09-12T03:46:53.803275+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_ac761b93",
+    "status": "simulated",
+    "sid": "sim_1104b1de6264475e",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T03:59:07.733691+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-12T03:59:07.736737+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_49cd1f34993c4dad",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T03:59:07.747844+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 76,
+    "sent": 0,
+    "simulated": 13
+  },
+  {
+    "timestamp": "2026-09-12T03:59:07.806675+00:00",
+    "action": "compliance_check_run",
+    "business_id": "verification-test",
+    "score": 33,
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-12T04:00:29.511961+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-12T04:00:29.513285+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_bc90df3569764a61",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:00:29.522073+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 76,
+    "sent": 0,
+    "simulated": 0
+  },
+  {
+    "timestamp": "2026-09-12T04:00:29.580998+00:00",
+    "action": "compliance_check_run",
+    "business_id": "verification-test",
+    "score": 33,
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-12T04:00:41.083600+00:00",
+    "action": "business_saved",
+    "business_id": "biz_2c5a086f"
+  },
+  {
+    "timestamp": "2026-09-12T04:00:41.086146+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_2c5a086f",
+    "status": "simulated",
+    "sid": "sim_d014b2bfeca643e6",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:01:17.056765+00:00",
+    "action": "contract_health_check_uploaded",
+    "filename": "mock_gst_registration_certificate.pdf",
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-12T04:02:24.411407+00:00",
+    "action": "contract_health_check_uploaded",
+    "filename": "sample_indian_commercial_contract.pdf",
+    "risk": "medium"
+  },
+  {
+    "timestamp": "2026-09-12T04:16:22.041330+00:00",
+    "action": "business_saved",
+    "business_id": "biz_api_test_01"
+  },
+  {
+    "timestamp": "2026-09-12T04:16:22.043306+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_api_test_01",
+    "status": "simulated",
+    "sid": "sim_90c4432f091b4e11",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:16:22.055923+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-13",
+    "candidates": 77,
+    "sent": 0,
+    "simulated": 1
+  },
+  {
+    "timestamp": "2026-09-12T04:16:22.116581+00:00",
+    "action": "compliance_check_run",
+    "business_id": "verification-test",
+    "score": 33,
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-12T04:16:34.788367+00:00",
+    "action": "business_saved",
+    "business_id": "biz_d5460240"
+  },
+  {
+    "timestamp": "2026-09-12T04:16:34.790998+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_d5460240",
+    "status": "simulated",
+    "sid": "sim_16ea26ed69d647f3",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:16:48.924569+00:00",
+    "action": "contract_health_check_uploaded",
+    "filename": "mock_gst_registration_certificate.pdf",
+    "risk": "high"
+  },
+  {
+    "timestamp": "2026-09-12T04:41:32.899539+00:00",
+    "action": "business_saved",
+    "business_id": "biz_34900f4f"
+  },
+  {
+    "timestamp": "2026-09-12T04:41:32.901071+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_34900f4f",
+    "status": "simulated",
+    "sid": "sim_7d0a5bd471a84736",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:41:40.321622+00:00",
+    "action": "business_saved",
+    "business_id": "biz_3631908a"
+  },
+  {
+    "timestamp": "2026-09-12T04:41:40.322514+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_3631908a",
+    "status": "simulated",
+    "sid": "sim_12298bff89b14541",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:41:57.737593+00:00",
+    "action": "business_saved",
+    "business_id": "biz_a56582f9"
+  },
+  {
+    "timestamp": "2026-09-12T04:41:57.739813+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_a56582f9",
+    "status": "simulated",
+    "sid": "sim_6240dc3382254ebc",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:48:15.605445+00:00",
+    "action": "business_saved",
+    "business_id": "biz_8c060dae"
+  },
+  {
+    "timestamp": "2026-09-12T04:48:15.607218+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_8c060dae",
+    "status": "simulated",
+    "sid": "sim_258583e69c8b4504",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:49:28.442315+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-12",
+    "candidates": 81,
+    "sent": 0,
+    "simulated": 81
+  },
+  {
+    "timestamp": "2026-09-12T04:52:14.687776+00:00",
+    "action": "reminder_cycle_executed",
+    "as_of_date": "2026-09-12",
+    "candidates": 81,
+    "sent": 0,
+    "simulated": 0
+  },
+  {
+    "timestamp": "2026-09-12T04:56:35.879187+00:00",
+    "action": "business_saved",
+    "business_id": "biz_0c153b2d"
+  },
+  {
+    "timestamp": "2026-09-12T04:56:36.975804+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_0c153b2d",
+    "status": "sent",
+    "sid": "WS_a36abe6a4f12487b",
+    "error_code": null
+  },
+  {
+    "timestamp": "2026-09-12T04:56:51.319183+00:00",
+    "action": "business_saved",
+    "business_id": "biz_f104338d"
+  },
+  {
+    "timestamp": "2026-09-12T04:56:51.320319+00:00",
+    "action": "business_saved",
+    "business_id": "biz_9824774e"
+  },
+  {
+    "timestamp": "2026-09-12T04:56:51.916850+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_9824774e",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T04:56:52.555890+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_f104338d",
+    "status": "failed",
+    "sid": null,
+    "error_code": "WHATSAPP_SEND_FAILED"
+  },
+  {
+    "timestamp": "2026-09-12T05:06:01.490580+00:00",
+    "action": "contract_health_whatsapp_sent",
+    "filename": "sample_indian_vendor_agreement.pdf",
+    "whatsapp_number": "+918920013753",
+    "status": "sent",
+    "sid": "WS_57233d62706549e1"
+  },
+  {
+    "timestamp": "2026-09-12T05:10:42.131893+00:00",
+    "action": "business_saved",
+    "business_id": "biz_756ad3ad"
+  },
+  {
+    "timestamp": "2026-09-12T05:10:42.803145+00:00",
+    "action": "onboarding_whatsapp_sent",
+    "business_id": "biz_756ad3ad",
+    "status": "sent",
+    "sid": "WS_cefe93d51a4c4c36",
+    "error_code": null
   }
 ]

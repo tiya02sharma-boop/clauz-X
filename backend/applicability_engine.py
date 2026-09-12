@@ -1,80 +1,94 @@
-"""Pure, deterministic evaluation of approved rule records only."""
+"""
+Pure, deterministic evaluation of approved rule records only.
+
+Stage 2 note: The matching logic (evaluate_rule, _norm, _condition) now lives
+canonically in matching.py and is re-exported here so that existing callers
+(tests, internal tools) that import from applicability_engine continue to work
+unchanged.
+
+check_applicability() is now a thin wrapper that delegates to the orchestrator,
+then reconstructs the legacy response envelope:
+  { business, applicable_obligations, not_applicable }
+
+This means neither app.py nor calendar_service.py require any code changes.
+"""
 from typing import Any
 from .models import BusinessProfile
 from .storage import load
 from .config import RULES_PATH
 
-def _norm(value: Any) -> str | None:
-    return str(value).strip().casefold() if value is not None and str(value).strip() else None
+# Re-export the matching helpers verbatim so existing tests that import them
+# from this module continue to work without modification.
+from .matching import _norm, _condition, evaluate_rule  # noqa: F401
 
-def _condition(field: str, business_value: Any, minimum: Any = None, maximum: Any = None, required: Any = None):
-    if required is not None:
-        ok = _norm(business_value) == _norm(required)
-        return ok, {"business_value": business_value, "required": required, "matched": ok}, f"{field} {'matches' if ok else 'does not match'} required value {required!r}"
-    checks, detail, reasons = [], {"business_value": business_value}, []
-    if minimum is not None:
-        ok = business_value is not None and business_value >= minimum; checks.append(ok); detail["required_minimum"] = minimum; reasons.append(f"meets minimum {minimum}" if ok else f"does not meet minimum {minimum}")
-    if maximum is not None:
-        ok = business_value is not None and business_value <= maximum; checks.append(ok); detail["required_maximum"] = maximum; reasons.append(f"meets maximum {maximum}" if ok else f"exceeds maximum {maximum}")
-    ok = all(checks); detail["matched"] = ok
-    return ok, detail, f"{field} " + " and ".join(reasons)
-
-def evaluate_rule(rule: dict[str, Any], business: BusinessProfile | dict[str, Any]) -> dict[str, Any]:
-    business = business if isinstance(business, BusinessProfile) else BusinessProfile.model_validate(business)
-    matched, failed, messages = {}, {}, []
-    for field, min_key, max_key in (
-        ("turnover", "turnover_min", "turnover_max"),
-        ("headcount", "headcount_min", "headcount_max"),
-        ("investment_plant_machinery", "investment_min", "investment_max"),
-    ):
-        if rule.get(min_key) is not None or rule.get(max_key) is not None:
-            ok, detail, message = _condition(field, getattr(business, field, None), rule.get(min_key), rule.get(max_key))
-            (matched if ok else failed)[field] = detail
-            messages.append(message)
-    for field in ("sector", "state", "entity_type"):
-        if rule.get(field) is not None:
-            ok, detail, message = _condition(field, getattr(business, field, None), required=rule[field])
-            (matched if ok else failed)[field] = detail
-            messages.append(message)
-    if rule.get("gst_registered") is not None:
-        ok = business.gst_registered is rule["gst_registered"]
-        detail = {"business_value": business.gst_registered, "required": rule["gst_registered"], "matched": ok}
-        (matched if ok else failed)["gst_registered"] = detail
-        messages.append("GST registration status matches the rule." if ok else "GST registration status does not match the rule.")
-    if rule.get("requires_is_factory") is not None:
-        required_factory = bool(rule["requires_is_factory"])
-        biz_factory = getattr(business, "is_factory", None)
-        ok = biz_factory is not None and bool(biz_factory) is required_factory
-        detail = {"business_value": biz_factory, "required": required_factory, "matched": ok}
-        (matched if ok else failed)["requires_is_factory"] = detail
-        if ok:
-            if required_factory:
-                messages.append("Applies because your business operates as a factory under the Factories Act, not a commercial establishment.")
-            else:
-                messages.append("Applies because your business operates as a commercial establishment under the Shops and Establishments Act, not a factory.")
-        else:
-            if required_factory:
-                messages.append("Does not apply because your business does not operate as a factory under the Factories Act.")
-            else:
-                messages.append("Does not apply because your business operates as a factory, not a commercial establishment.")
-    if rule.get("requires_flag") is not None:
-        flag_name = rule["requires_flag"]
-        flags = getattr(business, "flags", None) or {}
-        ok = bool(flags.get(flag_name))
-        detail = {"business_value": flags.get(flag_name), "required_flag": flag_name, "matched": ok}
-        (matched if ok else failed)["requires_flag"] = detail
-        messages.append(f"Flag {flag_name!r} is {'present' if ok else 'missing'}.")
-    applicable = not failed
-    return {"rule_id": rule.get("rule_id"), "obligation_name": rule.get("obligation_name"), "applicable": applicable,
-            "matched_conditions": matched, "failed_conditions": failed,
-            "reason": "; ".join(messages) if messages else "No applicability restrictions are defined for this rule.",
-            "source_citation": rule.get("source_citation"), "source_url": rule.get("source_url"),
-            "description": rule.get("description"), "recurrence": rule.get("recurrence"), "due_day_rule": rule.get("due_day_rule"),
-            "penalty_formula": rule.get("penalty_formula")}
 
 def check_applicability(business: BusinessProfile | dict[str, Any], rules_path=RULES_PATH) -> dict[str, Any]:
+    """
+    Evaluate a business profile against all active compliance rules.
+
+    Delegates to orchestrator.run_compliance_check() for the core evaluation,
+    then wraps the result in the legacy response envelope that downstream code
+    (calendar_service.py, app.py, existing tests) already expects:
+
+      {
+        "business":               <BusinessProfile as dict>,
+        "applicable_obligations": [<matched rule dicts>],
+        "not_applicable":         []   # orchestrator returns matches only
+      }
+
+    The ``rules_path`` parameter is accepted for backwards-compatibility with
+    callers that pass it explicitly (e.g. tests using a temp rules file), but
+    the orchestrator uses its own embedded rule tables.  Rules added via the
+    admin approve flow are stored in rules.json and are evaluated by the legacy
+    path; the orchestrator handles the built-in baseline + approved active rules
+    that have been migrated into checker modules.
+
+    For full regression parity, this wrapper evaluates BOTH:
+      1. The orchestrator's checker-embedded rules (the migrated set).
+      2. Any additional active rules found in rules_path that are NOT already
+         covered by the checker modules (i.e. dynamically approved rules added
+         via the review pipeline).
+
+    This ensures that rules approved through /admin/approve/<id> and written to
+    rules.json continue to appear in applicability results alongside the
+    checker-embedded rules.
+    """
+    from . import orchestrator  # local import to avoid circular dependency at module level
+
     profile = business if isinstance(business, BusinessProfile) else BusinessProfile.model_validate(business)
-    # Retired/superseded baseline rows remain in the catalog for audit history,
-    # but never participate in a live applicability decision.
-    results = [evaluate_rule(rule, profile) for rule in load(rules_path, []) if rule.get("active", True)]
-    return {"business": profile.model_dump(), "applicable_obligations": [r for r in results if r["applicable"]], "not_applicable": [r for r in results if not r["applicable"]]} 
+
+    # --- Step 1: Run the orchestrator (checker-embedded rules) ---
+    orchestrator_matches = orchestrator.run_compliance_check(profile.model_dump())
+
+    # Collect rule_ids already covered by the orchestrator so we don't double-count.
+    orchestrator_ids: set[str] = {m.get("rule_id") for m in orchestrator_matches if m.get("rule_id")}
+
+    # --- Step 2: Evaluate any additional active rules from rules_path ---
+    # These are rules approved via the admin pipeline that live only in rules.json,
+    # not yet migrated into a checker module.
+    extra_applicable: list[dict[str, Any]] = []
+    extra_not_applicable: list[dict[str, Any]] = []
+
+    for rule in load(rules_path, []):
+        if not rule.get("active", True):
+            continue
+        rule_id = rule.get("rule_id", "")
+        if rule_id in orchestrator_ids:
+            # Already evaluated by the orchestrator; skip to avoid duplication.
+            continue
+        result = evaluate_rule(rule, profile)
+        if result["applicable"]:
+            extra_applicable.append(result)
+        else:
+            extra_not_applicable.append(result)
+
+    # --- Step 3: Assemble response in the legacy envelope ---
+    applicable = orchestrator_matches + extra_applicable
+
+    return {
+        "business": profile.model_dump(),
+        "applicable_obligations": applicable,
+        # not_applicable is only populated for extra rules not in the orchestrator;
+        # the orchestrator returns matches only (not-applicable rules are silently dropped).
+        "not_applicable": extra_not_applicable,
+    }

@@ -1,46 +1,53 @@
 import os
+import re
+import json
+import tempfile
 import hashlib
 from pathlib import Path
 import sys
-from flask import Flask, jsonify, request
+import io
+import uuid
+from flask import Flask, jsonify, request, send_file
 from pydantic import ValidationError
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from backend import config
     from backend.applicability_engine import check_applicability
-    from backend.llm_client import grounded_answer
-    from backend.rag_assistant import is_compliance_question, retrieve
     from backend.calendar_service import (
         compute_obligations_calendar,
         get_business,
         list_businesses,
         recompute_business_calendar,
         save_or_update_business,
+        save_compliance_check,
+        list_compliance_checks,
     )
     from backend.models import BusinessProfile, ExtractedRule
-    from backend.monitor import run_monitor_cycle
-    from backend.monitor_scheduler import start_monitor_scheduler
+    from backend.pdf_extractor import extract_pdf_text
+    from backend.contract_health import run_contract_health_check
+    from backend.pdf_report_generator import build_contract_health_pdf
     from backend.reminder_scheduler import run_reminder_cycle
     from backend.storage import audit, load, now, save
-    from backend.whatsapp_sender import send_onboarding_summary
+    from backend.whatsapp_sender import send_contract_health_report_whatsapp, send_onboarding_summary
 else:
     from . import config
     from .applicability_engine import check_applicability
-    from .llm_client import grounded_answer
-    from .rag_assistant import is_compliance_question, retrieve
     from .calendar_service import (
         compute_obligations_calendar,
         get_business,
         list_businesses,
         recompute_business_calendar,
         save_or_update_business,
+        save_compliance_check,
+        list_compliance_checks,
     )
     from .models import BusinessProfile, ExtractedRule
-    from .monitor import run_monitor_cycle
-    from .monitor_scheduler import start_monitor_scheduler
+    from .pdf_extractor import extract_pdf_text
+    from .contract_health import run_contract_health_check
+    from .pdf_report_generator import build_contract_health_pdf
     from .reminder_scheduler import run_reminder_cycle
     from .storage import audit, load, now, save
-    from .whatsapp_sender import send_onboarding_summary
+    from .whatsapp_sender import send_contract_health_report_whatsapp, send_onboarding_summary
 
 app = Flask(__name__)
 config.ensure_storage()
@@ -56,7 +63,14 @@ def bootstrap_product_baseline() -> None:
     audit(config.AUDIT_PATH, "product_baseline_installed", version=manifest.get("version"), rule_count=len(baseline))
 
 bootstrap_product_baseline()
-start_monitor_scheduler()
+# Monitoring pulls in optional embedding dependencies. Keep the lightweight
+# contract dashboard usable without them unless monitoring is deliberately on.
+if config.ENABLE_REGULATORY_MONITOR:
+    if __package__ in (None, ""):
+        from backend.monitor_scheduler import start_monitor_scheduler
+    else:
+        from .monitor_scheduler import start_monitor_scheduler
+    start_monitor_scheduler()
 
 @app.before_request
 def handle_preflight():
@@ -104,6 +118,14 @@ def applicability():
 
 @app.post("/api/ask")
 def ask_clauz():
+    # Retrieval dependencies (Chroma and the embedding model) are optional for
+    # the contract-review workflow, so load them only when this AI endpoint is used.
+    if __package__ in (None, ""):
+        from backend.llm_client import grounded_answer
+        from backend.rag_assistant import is_compliance_question, retrieve
+    else:
+        from .llm_client import grounded_answer
+        from .rag_assistant import is_compliance_question, retrieve
     question = str((request.get_json(silent=True) or {}).get("question", "")).strip()
     if not question: return error("QUESTION_REQUIRED", "Please enter a compliance question.")
     if not is_compliance_question(question):
@@ -170,7 +192,12 @@ def reject(candidate_id):
     return jsonify({"candidate_id": candidate_id, "status": "rejected"})
 
 @app.post("/admin/monitor/run")
-def monitor_run(): return jsonify(run_monitor_cycle(dry_run=bool((request.get_json(silent=True) or {}).get("dry_run", False))))
+def monitor_run():
+    if __package__ in (None, ""):
+        from backend.monitor import run_monitor_cycle
+    else:
+        from .monitor import run_monitor_cycle
+    return jsonify(run_monitor_cycle(dry_run=bool((request.get_json(silent=True) or {}).get("dry_run", False))))
 
 @app.get("/admin/monitor/status")
 def monitor_status():
@@ -346,5 +373,262 @@ def get_reminder_logs():
         "count": len(filtered[:limit]),
         "logs": filtered[:limit]
     })
+
+
+# --- Compliance document verification ---
+
+def _verification_profile(payload: dict) -> BusinessProfile:
+    """Validate a JSON business profile consistently across verification routes."""
+    return BusinessProfile.model_validate(payload)
+
+
+# --- Contract Health Report ---
+
+@app.post("/api/contracts/health")
+def contract_health():
+    """Run the India-focused first-pass template suite with Gemini analysis against text."""
+    body = request.get_json(silent=True) or {}
+    use_ai = str(body.get("use_ai", request.args.get("ai", "true"))).lower() != "false"
+    try:
+        report = run_contract_health_check(
+            str(body.get("contract_text", "")), body.get("filename"), use_ai=use_ai
+        )
+        audit(config.AUDIT_PATH, "contract_health_check_run", filename=body.get("filename"), risk=report["overall_risk"])
+        return jsonify(report), 200
+    except ValueError as exc:
+        return error("INVALID_CONTRACT", str(exc))
+
+
+@app.post("/api/contracts/health/upload")
+def contract_health_upload():
+    """Extract a single PDF and return its Contract Health Report with Gemini analysis."""
+    temporary_path: str | None = None
+    use_ai = request.args.get("ai", "true").lower() != "false"
+    try:
+        uploaded = request.files.get("contract")
+        if not uploaded or not uploaded.filename:
+            return error("CONTRACT_REQUIRED", "Upload one contract PDF.")
+        if not uploaded.filename.lower().endswith(".pdf"):
+            return error("INVALID_FILE_TYPE", "Contract Health Report currently accepts PDF files only.")
+        handle = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+        temporary_path = handle.name
+        handle.close()
+        uploaded.save(temporary_path)
+        if os.path.getsize(temporary_path) > config.MAX_DOCUMENT_BYTES:
+            return error("FILE_TOO_LARGE", "The contract exceeds the size limit.", 413)
+        extracted = extract_pdf_text(temporary_path)
+        report = run_contract_health_check(extracted.get("text", ""), uploaded.filename, use_ai=use_ai)
+        audit(config.AUDIT_PATH, "contract_health_check_uploaded", filename=uploaded.filename, risk=report["overall_risk"])
+        return jsonify(report), 200
+    except ValueError as exc:
+        return error("INVALID_CONTRACT", str(exc))
+    except Exception as exc:
+        return error("CONTRACT_HEALTH_FAILED", f"Contract review could not complete: {exc}", 502)
+    finally:
+        if temporary_path:
+            try:
+                os.unlink(temporary_path)
+            except OSError:
+                pass
+
+
+@app.post("/api/contracts/health/pdf")
+def contract_health_pdf():
+    """Generate a structured, professional PDF for a Contract Health Report."""
+    body = request.get_json(silent=True) or {}
+    report = body.get("report")
+    if not report:
+        contract_text = body.get("contract_text")
+        if not contract_text:
+            return error("REPORT_OR_TEXT_REQUIRED", "Provide a 'report' object or 'contract_text' in request body.")
+        use_ai = str(body.get("use_ai", "true")).lower() != "false"
+        try:
+            report = run_contract_health_check(contract_text, body.get("filename"), use_ai=use_ai)
+        except ValueError as exc:
+            return error("INVALID_CONTRACT", str(exc))
+
+    try:
+        pdf_bytes = build_contract_health_pdf(report)
+        filename = report.get("filename") or "contract"
+        clean_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', Path(filename).stem)
+        download_filename = f"Contract_Health_Report_{clean_name}.pdf"
+        audit(config.AUDIT_PATH, "contract_health_pdf_generated", filename=filename)
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=download_filename,
+        )
+    except Exception as exc:
+        return error("PDF_GENERATION_FAILED", f"Could not generate PDF: {exc}", 500)
+
+
+@app.get("/api/contracts/health/pdf/download/<report_id>.pdf")
+def download_contract_health_pdf(report_id: str):
+    """Serve a saved Contract Health Report PDF."""
+    pdf_path = config.DOCUMENTS_DIR / "reports" / f"{report_id}.pdf"
+    if not pdf_path.exists():
+        return error("FILE_NOT_FOUND", "Requested Contract Health Report PDF was not found.", 404)
+    return send_file(
+        pdf_path,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"Contract_Health_Report_{report_id}.pdf",
+    )
+
+
+@app.post("/api/contracts/health/whatsapp")
+def contract_health_whatsapp():
+    """Generate Contract Health PDF and send report summary + PDF download link via WhatsApp."""
+    body = request.get_json(silent=True) or {}
+    whatsapp_number = body.get("whatsapp_number") or body.get("to")
+    if not whatsapp_number:
+        return error("PHONE_NUMBER_REQUIRED", "Provide a 'whatsapp_number' in request body.")
+
+    report = body.get("report")
+    if not report:
+        contract_text = body.get("contract_text")
+        if not contract_text:
+            return error("REPORT_OR_TEXT_REQUIRED", "Provide a 'report' object or 'contract_text' in request body.")
+        use_ai = str(body.get("use_ai", "true")).lower() != "false"
+        try:
+            report = run_contract_health_check(contract_text, body.get("filename"), use_ai=use_ai)
+        except ValueError as exc:
+            return error("INVALID_CONTRACT", str(exc))
+
+    try:
+        pdf_bytes = build_contract_health_pdf(report)
+        report_id = report.get("id") or f"rep_{uuid.uuid4().hex[:12]}"
+        reports_dir = config.DOCUMENTS_DIR / "reports"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        pdf_file_path = reports_dir / f"{report_id}.pdf"
+        pdf_file_path.write_bytes(pdf_bytes)
+
+        base_url = (config.PUBLIC_BASE_URL or request.host_url).rstrip('/')
+        download_url = f"{base_url}/api/contracts/health/pdf/download/{report_id}.pdf"
+
+        send_res = send_contract_health_report_whatsapp(
+            whatsapp_number=whatsapp_number,
+            report=report,
+            pdf_download_url=download_url,
+        )
+
+        audit(
+            config.AUDIT_PATH,
+            "contract_health_whatsapp_sent",
+            filename=report.get("filename"),
+            whatsapp_number=whatsapp_number,
+            status=send_res.status,
+            sid=send_res.sid,
+        )
+
+        return jsonify({
+            "success": send_res.status in ("sent", "simulated"),
+            "status": send_res.status,
+            "sid": send_res.sid,
+            "pdf_download_url": download_url,
+            "error_code": send_res.error_code,
+            "error_message": send_res.error_message,
+        }), 200
+
+    except Exception as exc:
+        return error("WHATSAPP_SEND_FAILED", f"Could not process WhatsApp report request: {exc}", 500)
+
+
+@app.post("/api/compliance/check")
+def compliance_check():
+    if __package__ in (None, ""):
+        from backend.verification_engine import run_compliance_check
+    else:
+        from .verification_engine import run_compliance_check
+    body = request.get_json(silent=True) or {}
+    try:
+        profile = _verification_profile(body.get("business_profile") or {})
+        docs = body.get("uploaded_docs") or {}
+        if not isinstance(docs, dict):
+            return error("INVALID_UPLOADED_DOCS", "uploaded_docs must map obligation IDs to extracted document text.")
+        report = run_compliance_check(profile, docs, body.get("verification_date"))
+        stored = save_compliance_check(report.model_dump())
+        audit(config.AUDIT_PATH, "compliance_check_run", business_id=profile.business_id, score=report.compliance_score, risk=report.risk_level)
+        return jsonify(stored), 200
+    except (ValidationError, TypeError, ValueError) as exc:
+        return error("INVALID_COMPLIANCE_CHECK", str(exc))
+    except Exception as exc:
+        return error("COMPLIANCE_CHECK_FAILED", f"Compliance verification could not complete: {exc}", 502)
+
+
+@app.post("/api/compliance/check/upload")
+def compliance_check_upload():
+    """Extract text from PDF uploads keyed by obligation ID, then verify them."""
+    if __package__ in (None, ""):
+        from backend.verification_engine import run_compliance_check
+    else:
+        from .verification_engine import run_compliance_check
+    temporary_paths: list[str] = []
+    try:
+        profile_data = json.loads(request.form.get("business_profile", "{}"))
+        profile = _verification_profile(profile_data)
+        manifest = json.loads(request.form.get("manifest", "{}"))
+        if not isinstance(manifest, dict):
+            return error("INVALID_MANIFEST", "manifest must map upload field names to obligation IDs.")
+        documents: dict[str, str] = {}
+        for field, uploaded in request.files.items():
+            if not uploaded.filename:
+                continue
+            if not uploaded.filename.lower().endswith(".pdf"):
+                return error("INVALID_FILE_TYPE", f"File '{uploaded.filename}' is not a PDF.")
+            handle = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+            temporary_paths.append(handle.name); handle.close(); uploaded.save(handle.name)
+            if os.path.getsize(handle.name) > config.MAX_DOCUMENT_BYTES:
+                return error("FILE_TOO_LARGE", f"File '{uploaded.filename}' exceeds the size limit.", 413)
+            extracted = extract_pdf_text(handle.name)
+            documents[manifest.get(field, field)] = extracted.get("text", "")
+        report = run_compliance_check(profile, documents, request.form.get("verification_date"))
+        stored = save_compliance_check(report.model_dump())
+        audit(config.AUDIT_PATH, "compliance_check_uploaded", business_id=profile.business_id, uploaded_files=len(documents), score=report.compliance_score)
+        return jsonify(stored), 200
+    except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
+        return error("INVALID_COMPLIANCE_UPLOAD", str(exc))
+    except Exception as exc:
+        return error("COMPLIANCE_CHECK_FAILED", f"Upload compliance verification failed: {exc}", 502)
+    finally:
+        for path in temporary_paths:
+            try: os.unlink(path)
+            except OSError: pass
+
+
+@app.post("/api/compliance/check/reverify")
+def compliance_check_reverify():
+    if __package__ in (None, ""):
+        from backend.verification_engine import reverify_obligation
+    else:
+        from .verification_engine import reverify_obligation
+    body = request.get_json(silent=True) or {}
+    try:
+        obligation_id = body.get("obligation_id")
+        if not obligation_id:
+            return error("OBLIGATION_ID_REQUIRED", "obligation_id is required.")
+        profile_data = body.get("business_profile")
+        if not profile_data and body.get("business_id"):
+            business = get_business(body["business_id"])
+            profile_data = business and business.get("profile")
+        if not profile_data:
+            return error("BUSINESS_PROFILE_REQUIRED", "business_profile or a valid business_id is required.")
+        profile = _verification_profile(profile_data)
+        previous = next(iter(list_compliance_checks(profile.business_id)), None)
+        report = reverify_obligation(obligation_id, profile, body.get("document_text", ""), previous, body.get("verification_date"))
+        stored = save_compliance_check(report.model_dump())
+        audit(config.AUDIT_PATH, "obligation_reverified", business_id=profile.business_id, obligation_id=obligation_id)
+        return jsonify(stored), 200
+    except (ValidationError, TypeError, ValueError) as exc:
+        return error("INVALID_REVERIFY_REQUEST", str(exc))
+    except Exception as exc:
+        return error("REVERIFY_FAILED", f"Re-verification failed: {exc}", 502)
+
+
+@app.get("/api/compliance/businesses/<business_id>/checks")
+def get_business_compliance_checks(business_id):
+    checks = list_compliance_checks(business_id)
+    return jsonify({"business_id": business_id, "total": len(checks), "checks": checks})
 
 if __name__ == "__main__": app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5001")), debug=False)

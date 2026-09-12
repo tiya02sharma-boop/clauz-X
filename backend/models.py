@@ -139,3 +139,50 @@ class ExtractedRule(BaseModel):
     evidence: dict[str, str] = Field(default_factory=dict)
     change_type: Literal["new", "amendment", "replacement", "unknown"] = "unknown"
     previous_rule_id: str | None = None
+
+
+class DocumentFileValidation(BaseModel):
+    document_type: str | None = None
+    readable: bool = False
+    complete_enough_for_review: bool = False
+    apparent_status: Literal["usable", "needs_review", "invalid"] = "needs_review"
+    reason: str
+    evidence: str | None = None
+    identifiers_found: list[str] = Field(default_factory=list)
+    issues: list[str] = Field(default_factory=list)
+    expiry_date: str | None = None
+    extraction_method: str | None = None
+
+
+class RegulatoryRequirement(BaseModel):
+    obligation_id: str
+    title: str
+    description: str | None = None
+    applicable: bool = True
+    required_evidence: list[str] = Field(default_factory=list)
+    legal_source: str | None = None
+    conditions: list[Any] = Field(default_factory=list)
+
+
+class ComplianceVerificationResult(BaseModel):
+    obligation_id: str
+    verdict: Literal["pass", "fail", "missing", "needs_review"]
+    reason: str
+    evidence: str | None = None
+    document_validation_status: str | None = None
+    legal_source: str | None = None
+    extraction_method: str | None = None
+
+
+class ComplianceCheckReport(BaseModel):
+    check_id: str | None = None
+    business_id: str | None = None
+    business_name: str | None = None
+    created_at: str | None = None
+    applicable_requirements: list[RegulatoryRequirement] = Field(default_factory=list)
+    results: list[ComplianceVerificationResult] = Field(default_factory=list)
+    compliance_score: int = 0
+    risk_level: Literal["low", "medium", "high"] = "high"
+    human_verification_required: list[str] = Field(default_factory=list)
+    conflicts_detected: list[str] = Field(default_factory=list)
+    coverage_note: str | None = None
