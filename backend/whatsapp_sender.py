@@ -134,18 +134,26 @@ def send_whatsapp_message(
         headers={
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
-            "User-Agent": "ClauzX-ComplianceEngine/1.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         },
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:
             resp_body = resp.read().decode("utf-8")
             data = json.loads(resp_body)
-            # WaSenderAPI returns { "success": true, "message": "...", ... }
-            sid = data.get("id") or data.get("messageId") or f"WS_{uuid.uuid4().hex[:16]}"
-            logger.info("WaSender message sent to %s (id: %s)", normalized_to, sid)
-            return WhatsAppSendResult(status="sent", sid=sid, error_code=None, error_message=None)
+            # WaSenderAPI returns { "success": true, "data": { "msgId": ... } } or { "id": ... }
+            data_obj = data.get("data") if isinstance(data.get("data"), dict) else {}
+            sid = (
+                data.get("id")
+                or data.get("messageId")
+                or data_obj.get("msgId")
+                or data_obj.get("id")
+                or f"WS_{uuid.uuid4().hex[:16]}"
+            )
+            sid_str = str(sid)
+            logger.info("WaSender message sent to %s (id: %s)", normalized_to, sid_str)
+            return WhatsAppSendResult(status="sent", sid=sid_str, error_code=None, error_message=None)
 
     except urllib.error.HTTPError as http_err:
         try:

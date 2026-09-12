@@ -88,6 +88,7 @@ def run_reminder_cycle(
             log.get("date"),
         )
         for log in existing_logs
+        if log.get("status") in ("sent", "simulated")
     }
 
     summary = {
