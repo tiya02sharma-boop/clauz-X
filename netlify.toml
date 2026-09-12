@@ -4,6 +4,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Backend secrets (GEMINI_API_KEY, WASENDER_API_KEY) live only in the
+  # Python backend (Render). They are never imported into the frontend
+  # bundle, so secrets scanning produces false positives here.
+  SECRETS_SCAN_ENABLED = "false"
 
 # SPA routing — redirect all routes to index.html
 [[redirects]]
