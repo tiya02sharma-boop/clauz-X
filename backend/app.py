@@ -631,4 +631,5 @@ def get_business_compliance_checks(business_id):
     checks = list_compliance_checks(business_id)
     return jsonify({"business_id": business_id, "total": len(checks), "checks": checks})
 
-if __name__ == "__main__": app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5001")), debug=False)
+if __name__ == "__main__": app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5001")), debug=False)
+

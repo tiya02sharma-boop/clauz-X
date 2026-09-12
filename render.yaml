@@ -1,0 +1,46 @@
+services:
+  # ── Backend API (Flask via Gunicorn) ───────────────────────────────────────
+  - type: web
+    name: clauzx-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 "app:app"
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false          # Set this manually in the Render dashboard
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: DEMO_MODE
+        value: "false"
+      - key: MONITOR_REQUEST_TIMEOUT
+        value: "15"
+      - key: MAX_DOCUMENT_BYTES
+        value: "10000000"
+      - key: ENABLE_REGULATORY_MONITOR
+        value: "false"       # Use the cron job below instead
+      - key: MONITOR_INTERVAL_MINUTES
+        value: "360"
+      - key: WASENDER_API_KEY
+        sync: false          # Set this manually in the Render dashboard
+      - key: PUBLIC_BASE_URL
+        sync: false          # Set to your Render service URL after first deploy
+      - key: EMBEDDING_DIM
+        value: "768"
+
+  # ── Regulatory Monitor Cron Job (optional) ─────────────────────────────────
+  # Uncomment to enable scheduled regulatory checks.
+  # - type: cron
+  #   name: clauzx-regulatory-monitor
+  #   runtime: python
+  #   rootDir: backend
+  #   buildCommand: pip install -r requirements.txt
+  #   schedule: "0 */6 * * *"   # Every 6 hours
+  #   startCommand: python -m backend.monitor --once
+  #   envVars:
+  #     - key: GEMINI_API_KEY
+  #       sync: false
+  #     - key: GEMINI_MODEL
+  #       value: gemini-2.5-flash
