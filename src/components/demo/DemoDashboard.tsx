@@ -12,7 +12,8 @@ import {
 import { ContractDashboard } from '../ContractDashboard';
 import type { BusinessProfile } from '../../types';
 import {
-  samplePredefinedQuestions
+  samplePredefinedQuestions,
+  sampleObligations
 } from '../../data/mockComplianceData';
 
 interface DemoDashboardProps {
@@ -102,6 +103,54 @@ const computeClientMsmeClassification = (
   return 'Not MSME';
 };
 
+const computeApplicableObligationsLocally = (prof: BusinessProfile): LiveObligation[] => {
+  const headcount = parseNumericValue(prof.headcount) ?? 35;
+  const isFactory = typeof prof.isFactory === 'boolean' ? prof.isFactory : false;
+  const entityType = (prof.entityType || '').toLowerCase();
+  const isCorporate = entityType.includes('limited') || entityType.includes('llp') || entityType.includes('pvt');
+  const isGst = prof.gstRegistered !== false;
+  const state = (prof.state || '').toLowerCase();
+
+  return sampleObligations
+    .filter(obl => {
+      // Factories Act vs Shops & Establishments Act
+      if (obl.id === 'obl-factories-act' && !isFactory) return false;
+      if (obl.id === 'obl-shops-act' && isFactory) return false;
+
+      // GST obligations
+      if ((obl.code === 'GSTR-3B' || obl.code === 'GSTR-1') && !isGst) return false;
+
+      // Labor laws & social security thresholds
+      if (obl.code === 'EPF Monthly' && headcount < 20) return false;
+      if (obl.code === 'ESI Monthly' && headcount < 10) return false;
+
+      // State Specific: Professional tax (Maharashtra, etc.)
+      if (obl.code === 'PT Monthly Return' && !state.includes('maharashtra')) return false;
+
+      // Corporate & ROC filings: only for corporate entities
+      if ((obl.code.includes('DIR-3') || obl.code.includes('AOC-4') || obl.code.includes('Board Meeting') || obl.code === 'MSME-1 Form') && !isCorporate) {
+        return false;
+      }
+
+      return true;
+    })
+    .map(obl => ({
+      id: obl.id,
+      code: obl.code,
+      title: obl.title,
+      act: obl.act,
+      section: obl.section,
+      category: obl.category,
+      frequency: obl.frequency,
+      nextDueDate: obl.nextDueDate,
+      daysRemaining: obl.daysRemaining,
+      status: obl.status,
+      applicabilityReason: obl.applicabilityReason,
+      penaltyRisk: obl.penaltyRisk,
+      sourceUrl: obl.sourceUrl
+    }));
+};
+
 export const DemoDashboard: React.FC<DemoDashboardProps> = ({
   profile,
   onEditProfile,
@@ -109,8 +158,10 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [obligations, setObligations] = useState<LiveObligation[]>([]);
-  const [rulesState, setRulesState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [obligations, setObligations] = useState<LiveObligation[]>(() =>
+    computeApplicableObligationsLocally(profile)
+  );
+  const [rulesState, setRulesState] = useState<'loading' | 'ready' | 'error'>('ready');
   const [msmeClassification, setMsmeClassification] = useState<string>(() =>
     profile.msmeClassification || computeClientMsmeClassification(profile.investmentPlantMachinery, profile.turnover)
   );
@@ -169,46 +220,51 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
           setMsmeClassification(retProf.msme_classification);
         }
         const rawList = data.obligations || data.applicable_obligations || [];
-        const mapped = rawList.map((rule: any): LiveObligation => {
-          const cat = deriveCategory(rule);
-          const nextDue = rule.next_due || rule.due_day_rule || 'Schedule not specified';
-          let daysRemaining = 0;
-          let isOverdue = false;
-          if (rule.next_due) {
-            const today = new Date();
-            const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-            const dueParts = rule.next_due.split('-');
-            const dueUtc = Date.UTC(parseInt(dueParts[0]), parseInt(dueParts[1]) - 1, parseInt(dueParts[2]));
-            const diffDays = Math.ceil((dueUtc - todayUtc) / (1000 * 60 * 60 * 24));
-            daysRemaining = diffDays;
-            if (diffDays < 0) {
-              isOverdue = true;
+        if (rawList && rawList.length > 0) {
+          const mapped = rawList.map((rule: any): LiveObligation => {
+            const cat = deriveCategory(rule);
+            const nextDue = rule.next_due || rule.due_day_rule || 'Schedule not specified';
+            let daysRemaining = 0;
+            let isOverdue = false;
+            if (rule.next_due) {
+              const today = new Date();
+              const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+              const dueParts = rule.next_due.split('-');
+              const dueUtc = Date.UTC(parseInt(dueParts[0]), parseInt(dueParts[1]) - 1, parseInt(dueParts[2]));
+              const diffDays = Math.ceil((dueUtc - todayUtc) / (1000 * 60 * 60 * 24));
+              daysRemaining = diffDays;
+              if (diffDays < 0) {
+                isOverdue = true;
+              }
             }
-          }
-          const isUrgent = !isOverdue && daysRemaining >= 0 && daysRemaining <= 7;
-          return {
-            id: rule.obligation_id || rule.rule_id || Math.random().toString(),
-            code: rule.name || rule.obligation_name || rule.obligation_id || rule.rule_id,
-            title: rule.description || rule.name || rule.obligation_name || 'Approved compliance obligation',
-            act: rule.source_citation || rule.source_title || 'Approved regulatory source',
-            section: rule.source_citation || 'Statutory mandate',
-            category: cat,
-            frequency: rule.recurrence ? rule.recurrence.charAt(0).toUpperCase() + rule.recurrence.slice(1) : 'Monthly',
-            nextDueDate: nextDue,
-            daysRemaining: daysRemaining,
-            status: isOverdue ? 'Overdue' : (isUrgent ? 'Urgent' : (daysRemaining > 7 ? 'Upcoming' : 'Compliant')),
-            applicabilityReason: rule.reason || 'Matches your entity type and registration parameters.',
-            penaltyRisk: rule.penalty_formula || 'Statutory late fee & interest apply.',
-            sourceUrl: rule.source_url
-          };
-        });
-        setObligations(mapped);
+            const isUrgent = !isOverdue && daysRemaining >= 0 && daysRemaining <= 7;
+            return {
+              id: rule.obligation_id || rule.rule_id || Math.random().toString(),
+              code: rule.name || rule.obligation_name || rule.obligation_id || rule.rule_id,
+              title: rule.description || rule.name || rule.obligation_name || 'Approved compliance obligation',
+              act: rule.source_citation || rule.source_title || 'Approved regulatory source',
+              section: rule.source_citation || 'Statutory mandate',
+              category: cat,
+              frequency: rule.recurrence ? rule.recurrence.charAt(0).toUpperCase() + rule.recurrence.slice(1) : 'Monthly',
+              nextDueDate: nextDue,
+              daysRemaining: daysRemaining,
+              status: isOverdue ? 'Overdue' : (isUrgent ? 'Urgent' : (daysRemaining > 7 ? 'Upcoming' : 'Compliant')),
+              applicabilityReason: rule.reason || 'Matches your entity type and registration parameters.',
+              penaltyRisk: rule.penalty_formula || 'Statutory late fee & interest apply.',
+              sourceUrl: rule.source_url
+            };
+          });
+          setObligations(mapped);
+        } else {
+          setObligations(computeApplicableObligationsLocally(profile));
+        }
         setRulesState('ready');
       })
       .catch(error => {
         if (error.name !== 'AbortError') {
-          console.error('Fetch error:', error);
-          setRulesState('error');
+          console.warn('Backend unavailable, using client-side applicability engine:', error);
+          setObligations(computeApplicableObligationsLocally(profile));
+          setRulesState('ready');
         }
       });
     return () => controller.abort();
