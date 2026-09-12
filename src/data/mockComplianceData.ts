@@ -16,7 +16,7 @@ export const defaultProfile: BusinessProfile = {
   pan: 'AABCU9603R',
   cin: 'U72900MH2021PTC368491',
   udyamNumber: 'UDYAM-MH-01-0084920',
-  whatsappNumber: '+919896603656'
+  whatsappNumber: '+918920013753'
 };
 
 export const sampleObligations: Obligation[] = [

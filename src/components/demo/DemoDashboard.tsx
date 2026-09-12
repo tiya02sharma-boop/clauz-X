@@ -192,7 +192,7 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({
       gst_registered: profile.gstRegistered,
       gst_filing_scheme: profile.gstFilingScheme || 'unknown',
       agm_date: profile.agmDate || null,
-      whatsapp_number: profile.whatsappNumber || '+919896603656'
+      whatsapp_number: profile.whatsappNumber || '+918920013753'
     };
 
     fetch(`${apiBase}/api/compliance/businesses`, {

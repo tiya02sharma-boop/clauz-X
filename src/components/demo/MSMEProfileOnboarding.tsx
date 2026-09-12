@@ -49,7 +49,7 @@ export const MSMEProfileOnboarding: React.FC<MSMEProfileOnboardingProps> = ({
     ...initialProfile,
     investmentPlantMachinery: initialProfile.investmentPlantMachinery !== undefined ? initialProfile.investmentPlantMachinery : 20000000,
     isFactory: typeof initialProfile.isFactory === 'boolean' ? initialProfile.isFactory : false,
-    whatsappNumber: initialProfile.whatsappNumber || '+91 98966 03656'
+    whatsappNumber: initialProfile.whatsappNumber || '+91 89200 13753'
   }));
 
   const indianStates = [

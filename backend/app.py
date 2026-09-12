@@ -291,22 +291,37 @@ def create_or_update_business():
         record = save_or_update_business(body, as_of=as_of)
         audit(config.AUDIT_PATH, "business_saved", business_id=record["business_id"])
 
-        # Send the sign-in summary after applicability is evaluated. This is
-        # intentionally synchronous: a daemon thread can be terminated by a
-        # serverless worker immediately after returning the HTTP response.
+        # Send the sign-in summary after applicability is evaluated.
+        # Enforce a 65s cooldown per phone number to respect WaSender free tier (1 msg/min) limit
         notification = None
         whatsapp_number = body.get("whatsapp_number") or (record.get("profile") or {}).get("whatsapp_number")
         business_name = body.get("business_name") or (record.get("profile") or {}).get("business_name") or "Your Business"
         obligations = record.get("obligations", [])
         if whatsapp_number:
-            result = send_onboarding_summary(business_name, whatsapp_number, obligations)
-            notification = result.model_dump()
-            audit(config.AUDIT_PATH, "onboarding_whatsapp_dispatch",
-                  business_id=record["business_id"],
-                  status=result.status,
-                  sid=result.sid,
-                  error_code=result.error_code,
-                  error_message=result.error_message)
+            import time
+            global _last_onboarding_sent
+            if "_last_onboarding_sent" not in globals():
+                _last_onboarding_sent = {}
+            normalized_key = str(whatsapp_number).strip()
+            last_ts = _last_onboarding_sent.get(normalized_key, 0.0)
+            now_ts = time.time()
+
+            if (now_ts - last_ts) >= 65:
+                result = send_onboarding_summary(business_name, whatsapp_number, obligations)
+                if result.status == "sent":
+                    _last_onboarding_sent[normalized_key] = now_ts
+                notification = result.model_dump()
+                audit(config.AUDIT_PATH, "onboarding_whatsapp_dispatch",
+                      business_id=record["business_id"],
+                      status=result.status,
+                      sid=result.sid,
+                      error_code=result.error_code,
+                      error_message=result.error_message)
+            else:
+                notification = {
+                    "status": "throttled",
+                    "reason": f"Cooldown active ({int(65 - (now_ts - last_ts))}s remaining to respect WaSender rate limit)"
+                }
 
         return jsonify({**record, "whatsapp_notification": notification}), 200
     except (ValidationError, ValueError, TypeError) as exc:
