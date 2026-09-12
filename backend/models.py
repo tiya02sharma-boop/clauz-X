@@ -86,13 +86,14 @@ class ReminderLogEntry(BaseModel):
     to: str  # WhatsApp number
     status: Literal["sent", "simulated", "failed"]
     sid: str | None = None
-    error_code: Literal["INVALID_NUMBER", "RECIPIENT_NOT_OPTED_IN", "TEMPLATE_REQUIRED", "WHATSAPP_SEND_FAILED"] | None = None
+    error_code: Literal["INVALID_NUMBER", "RECIPIENT_NOT_OPTED_IN", "TEMPLATE_REQUIRED", "WHATSAPP_SESSION_DISCONNECTED", "WHATSAPP_SEND_FAILED"] | None = None
+    error_message: str | None = None
     sent_at: str  # ISO 8601 timestamp
 
 class WhatsAppSendResult(BaseModel):
     status: Literal["sent", "simulated", "failed"]
     sid: str | None = None
-    error_code: Literal["INVALID_NUMBER", "RECIPIENT_NOT_OPTED_IN", "TEMPLATE_REQUIRED", "WHATSAPP_SEND_FAILED"] | None = None
+    error_code: Literal["INVALID_NUMBER", "RECIPIENT_NOT_OPTED_IN", "TEMPLATE_REQUIRED", "WHATSAPP_SESSION_DISCONNECTED", "WHATSAPP_SEND_FAILED"] | None = None
     error_message: str | None = None
 
 class RegulatoryEntry(BaseModel):

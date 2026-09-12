@@ -181,6 +181,7 @@ def run_reminder_cycle(
                 status=send_result.status,
                 sid=send_result.sid,
                 error_code=send_result.error_code,
+                error_message=send_result.error_message,
                 sent_at=now(),
             )
             entry_dict = log_entry.model_dump()

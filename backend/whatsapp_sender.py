@@ -13,6 +13,7 @@ from .models import WhatsAppSendResult
 logger = logging.getLogger(__name__)
 
 WASENDER_SEND_URL = "https://www.wasenderapi.com/api/send-message"
+WASENDER_STATUS_URL = "https://www.wasenderapi.com/api/status"
 
 
 def normalize_phone_number(number: str | None) -> str | None:
@@ -73,7 +74,30 @@ def map_provider_error(code: int | str | None, message: str = "") -> str:
         return "INVALID_NUMBER"
     if "template" in msg or "24-hour" in msg:
         return "TEMPLATE_REQUIRED"
+    if "session" in msg and ("disconnect" in msg or "not connected" in msg):
+        return "WHATSAPP_SESSION_DISCONNECTED"
     return "WHATSAPP_SEND_FAILED"
+
+
+def get_wasender_status(api_key: str | None = None) -> dict:
+    """Return connection state without exposing the WaSender credential."""
+    key = api_key or config.WASENDER_API_KEY
+    if not key or str(key).strip().lower() in ("", "none", "your_api_key_here"):
+        return {"configured": False, "status": "not_configured"}
+
+    request = urllib.request.Request(
+        WASENDER_STATUS_URL,
+        headers={"Authorization": f"Bearer {key}", "User-Agent": "ClauzX/1.0"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        status = str(payload.get("status") or "unknown").lower()
+        return {"configured": True, "status": status}
+    except urllib.error.HTTPError as exc:
+        return {"configured": True, "status": "unavailable", "http_status": exc.code}
+    except Exception:
+        return {"configured": True, "status": "unavailable"}
 
 
 def send_whatsapp_message(
@@ -142,6 +166,18 @@ def send_whatsapp_message(
         with urllib.request.urlopen(req, timeout=15) as resp:
             resp_body = resp.read().decode("utf-8")
             data = json.loads(resp_body)
+            # Some provider errors are returned as HTTP 200 with success=false.
+            # Do not record those as deliveries merely because the transport
+            # request itself completed successfully.
+            if data.get("success") is False or str(data.get("status", "")).lower() in {"failed", "error"}:
+                err_msg = data.get("message") or data.get("error") or "WaSender rejected the message."
+                logger.warning("WaSender rejected message to %s: %s", normalized_to, err_msg)
+                return WhatsAppSendResult(
+                    status="failed",
+                    sid=None,
+                    error_code=map_provider_error(data.get("code"), str(err_msg)),
+                    error_message=str(err_msg),
+                )
             # WaSenderAPI returns { "success": true, "data": { "msgId": ... } } or { "id": ... }
             data_obj = data.get("data") if isinstance(data.get("data"), dict) else {}
             sid = (
@@ -266,4 +302,3 @@ def send_contract_health_report_whatsapp(
 
     body = "\n".join(msg_lines)
     return send_whatsapp_message(to=whatsapp_number, message=body)
-

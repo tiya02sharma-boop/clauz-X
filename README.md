@@ -54,6 +54,12 @@ python -m venv .venv
 .venv/bin/python -m backend.app   # http://localhost:5001
 ```
 
+The deployed frontend calls the Render backend at
+`https://clauzx-backend.onrender.com`. If you deploy the backend under a
+different Render URL, set Netlify's `VITE_BACKEND_URL` environment variable to
+that exact URL and redeploy the frontend. Verify the deployment with
+`GET /api/health` before using the applicability dashboard.
+
 ## Configuration
 
 Create `backend/.env` (optional):

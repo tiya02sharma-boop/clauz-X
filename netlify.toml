@@ -4,6 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Render service defined in render.yaml. Override this in Netlify if the
+  # service uses a different public URL.
+  VITE_BACKEND_URL = "https://clauzx-backend.onrender.com"
   # Backend secrets (GEMINI_API_KEY, WASENDER_API_KEY) live only in the
   # Python backend (Render). They are never imported into the frontend
   # bundle, so secrets scanning produces false positives here.

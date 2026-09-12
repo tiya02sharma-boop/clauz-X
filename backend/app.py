@@ -28,7 +28,7 @@ if __package__ in (None, ""):
     from backend.pdf_report_generator import build_contract_health_pdf
     from backend.reminder_scheduler import run_reminder_cycle
     from backend.storage import audit, load, now, save
-    from backend.whatsapp_sender import send_contract_health_report_whatsapp, send_onboarding_summary
+    from backend.whatsapp_sender import get_wasender_status, send_contract_health_report_whatsapp, send_onboarding_summary
 else:
     from . import config
     from .applicability_engine import check_applicability
@@ -47,7 +47,7 @@ else:
     from .pdf_report_generator import build_contract_health_pdf
     from .reminder_scheduler import run_reminder_cycle
     from .storage import audit, load, now, save
-    from .whatsapp_sender import send_contract_health_report_whatsapp, send_onboarding_summary
+    from .whatsapp_sender import get_wasender_status, send_contract_health_report_whatsapp, send_onboarding_summary
 
 app = Flask(__name__)
 config.ensure_storage()
@@ -98,6 +98,17 @@ def allow_local_frontend(response):
     return response
 
 def error(code, message, status=400): return jsonify({"error": {"code": code, "message": message}}), status
+
+@app.get("/api/health")
+def health_check():
+    """Lightweight readiness endpoint used by Render and deployment checks."""
+    return jsonify({"status": "ok", "service": "clauzx-backend"}), 200
+
+
+@app.get("/api/whatsapp/status")
+def whatsapp_status():
+    """Read-only WaSender connection diagnostic; never returns the API key."""
+    return jsonify(get_wasender_status()), 200
 
 @app.get("/")
 def api_home():
@@ -273,34 +284,31 @@ def get_businesses():
 
 @app.post("/api/compliance/businesses")
 def create_or_update_business():
-    """Create or update a business profile and recompute its obligation calendar."""
-    import threading
+    """Create or update a business profile and send its sign-in compliance summary."""
     try:
         body = request.get_json(force=True) or {}
         as_of = request.args.get("as_of") or body.get("as_of")
         record = save_or_update_business(body, as_of=as_of)
         audit(config.AUDIT_PATH, "business_saved", business_id=record["business_id"])
 
-        # Fire onboarding summary WhatsApp immediately after applicability engine runs.
-        # Runs in a daemon thread so the HTTP response is never blocked.
+        # Send the sign-in summary after applicability is evaluated. This is
+        # intentionally synchronous: a daemon thread can be terminated by a
+        # serverless worker immediately after returning the HTTP response.
+        notification = None
         whatsapp_number = body.get("whatsapp_number") or (record.get("profile") or {}).get("whatsapp_number")
         business_name = body.get("business_name") or (record.get("profile") or {}).get("business_name") or "Your Business"
         obligations = record.get("obligations", [])
         if whatsapp_number:
-            def _send():
-                try:
-                    result = send_onboarding_summary(business_name, whatsapp_number, obligations)
-                    audit(config.AUDIT_PATH, "onboarding_whatsapp_sent",
-                          business_id=record["business_id"],
-                          status=result.status,
-                          sid=result.sid,
-                          error_code=result.error_code)
-                except Exception as exc:
-                    audit(config.AUDIT_PATH, "onboarding_whatsapp_error",
-                          business_id=record["business_id"], error=str(exc))
-            threading.Thread(target=_send, daemon=True).start()
+            result = send_onboarding_summary(business_name, whatsapp_number, obligations)
+            notification = result.model_dump()
+            audit(config.AUDIT_PATH, "onboarding_whatsapp_dispatch",
+                  business_id=record["business_id"],
+                  status=result.status,
+                  sid=result.sid,
+                  error_code=result.error_code,
+                  error_message=result.error_message)
 
-        return jsonify(record), 200
+        return jsonify({**record, "whatsapp_notification": notification}), 200
     except (ValidationError, ValueError, TypeError) as exc:
         return error("INVALID_BUSINESS_PAYLOAD", str(exc))
 
@@ -632,4 +640,3 @@ def get_business_compliance_checks(business_id):
     return jsonify({"business_id": business_id, "total": len(checks), "checks": checks})
 
 if __name__ == "__main__": app.run(host="0.0.0.0", port=int(os.getenv("PORT", "5001")), debug=False)
-
